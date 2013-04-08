@@ -1,0 +1,2 @@
+Shopware Payone Plugin
+======================
