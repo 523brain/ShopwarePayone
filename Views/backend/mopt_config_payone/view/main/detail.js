@@ -97,7 +97,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         items: fieldsets,
         renderTo: document.body,
         width: 880,
-        height: 620,
+        height: 820,
       }];
   },
   activateField: function(me, field) {
@@ -183,6 +183,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'adresscheckActive',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -193,6 +194,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'adresscheckLiveMode',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -203,6 +205,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'adresscheckBillingAdress',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -213,6 +216,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'adresscheckShippingAdress',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -223,6 +227,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'adresscheckAutomaticCorrection',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -233,30 +238,35 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'adresscheckFailureHandling',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'numberfield',
         fieldLabel: 'Minimaler Warenwert',
         name: 'adresscheckMinBasket',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'numberfield',
         fieldLabel: 'Maximaler Warenwert',
         name: 'adresscheckMaxBasket',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'numberfield',
         fieldLabel: 'Gültigkeit',
         name: 'adresscheckLifetime',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'textfield',
         fieldLabel: 'Fehlermeldung',
         name: 'adresscheckFailureMessage',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -266,7 +276,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -276,7 +287,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -286,7 +298,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -296,7 +309,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -306,7 +320,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -316,7 +331,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -326,7 +342,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -336,7 +353,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
     ];
   },
@@ -354,6 +372,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'consumerscoreActive',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -364,6 +383,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'consumerscoreLiveMode',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -374,6 +394,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'consumerscoreCheckMoment',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -384,6 +405,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'consumerscoreCheckMode',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -394,24 +416,28 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'consumerscoreDefault',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'numberfield',
         name: 'consumerscoreLifetime',
         fieldLabel: 'Gültigkeit',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'numberfield',
         fieldLabel: 'Minimaler Warenwert',
         name: 'consumerscoreMinBasket',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'numberfield',
         fieldLabel: 'Maximaler Warenwert',
         name: 'consumerscoreMaxBasket',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -422,10 +448,12 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'consumerscoreFailureHandling',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'fieldcontainer',
         fieldLabel: 'Hinweistext',
+        labelWidth: 200,
         layout: 'vbox',
         items: [
           {
@@ -443,6 +471,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
       {
         xtype: 'fieldcontainer',
         fieldLabel: 'Zustimmungsfrage',
+        labelWidth: 200,
         layout: 'vbox',
         items: [
           {
@@ -460,6 +489,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
       {
         xtype: 'fieldcontainer',
         fieldLabel: 'A/B Test',
+        labelWidth: 200,
         layout: 'vbox',
         items: [
           {
@@ -492,28 +522,32 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         xtype: 'textfield',
         fieldLabel: 'Merchant-ID',
         name: 'merchantId',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         // Erzeugt ein Ext.form.field.Text-Eingabefeld
         xtype: 'textfield',
         fieldLabel: 'Portal-ID',
         name: 'portalId',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         // Erzeugt ein Ext.form.field.Text-Eingabefeld
         xtype: 'textfield',
         fieldLabel: 'Subaccount-ID',
         name: 'subaccountId',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         // Erzeugt ein Ext.form.field.Text-Eingabefeld
         xtype: 'textfield',
         fieldLabel: 'Schlüssel',
         name: 'apiKey',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -524,6 +558,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         valueField: 'value',
         name: 'liveMode',
         allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -533,7 +568,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -543,7 +579,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'display',
         valueField: 'value',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -554,7 +591,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         displayField: 'display',
         valueField: 'value',
         allowBlank: false,
-        disabled: true
+        disabled: true,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -565,7 +603,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         displayField: 'display',
         valueField: 'value',
         allowBlank: false,
-        disabled: true
+        disabled: true,
+        labelWidth: 200,
       },
     ]
   },
@@ -581,7 +620,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -591,7 +631,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -601,7 +642,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -611,7 +653,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -621,7 +664,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -631,7 +675,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -641,7 +686,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -651,7 +697,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -661,7 +708,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -671,7 +719,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -681,7 +730,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
       {
         xtype: 'combobox',
@@ -691,7 +741,8 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         queryMode: 'local',
         displayField: 'description',
         valueField: 'id',
-        allowBlank: false
+        allowBlank: false,
+        labelWidth: 200,
       },
     ]
   }

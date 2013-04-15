@@ -67,16 +67,14 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     if($response->getStatus() == $response::STATUS_OK)
     {
       $attributeData = $this->moptPayone__helper->getOrCreateAttribute($order);
-      
-      //do not insert new attribute row => weird session bug
-      if($attributeData->getId())
-      {
-        $attributeData->setMoptPayoneStatus($request->getParam('txaction'));
-        Shopware()->Models()->persist($attributeData);
-        Shopware()->Models()->flush();
-      }
+      $attributeData->setMoptPayoneStatus($request->getParam('txaction'));
+      Shopware()->Models()->persist($attributeData);
+      Shopware()->Models()->flush();
       
       $this->moptPayone__helper->mapTransactionStatus($order, $config, $request->getParam('txaction'));
+      
+      // forward status to configured urls
+      $this->moptPayoneForwardTransactionStatus($config, $request);
     }
     
     echo $response->getStatus();
@@ -92,6 +90,15 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     $service->getServiceProtocol()->addRepository($repository);
 
     return $service;
+  }
+  
+  protected function moptPayoneForwardTransactionStatus($payoneConfig, $request)
+  {
+    //check if urls are confiigured for this status
+    
+    //build params
+    
+    //send status to each url
   }
 
   public function Plugin()

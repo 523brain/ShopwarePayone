@@ -52,8 +52,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function uninstall()
   {
-     $em   = $this->Application()->Models();
-     $tool = new \Doctrine\ORM\Tools\SchemaTool($em);
+    $em   = $this->Application()->Models();
+    $tool = new \Doctrine\ORM\Tools\SchemaTool($em);
 //     
 //     $classes = array(
 //     $em->getClassMetadata('Shopware\CustomModels\MoptPayoneTransactionLog\MoptPayoneTransactionLog'),
@@ -231,7 +231,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     //remap payone order state after saveOrder
     $this->subscribeEvent('sOrder::sSaveOrder::after', 'sOrder__sSaveOrder__after');
 
-
     //copy attributes from temp-order
     $this->subscribeEvent('Shopware_Modules_Order_SaveOrderAttributes_FilterSQL', 'event_Shopware_Modules_Order_SaveOrderAttributes_FilterSQL');
   }
@@ -304,6 +303,13 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $isPayoneMethod = false;
     }
 
+    // disable consumerscore check if user is not logged in
+    // important, cause payments are already loaded at addArticle (to basket) call
+    if (!$user['additional']['user']['id'])
+    {
+      $isPayoneMethod = false;
+    }
+
     //perform consumerScoreCheck if configured
     $config = $moptPayoneMain->getPayoneConfig($paymentID);
 
@@ -314,8 +320,12 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
       $billingAddressData = $user['billingaddress'];
 
-      //check if consumerscore is still valid
-      if ($user && $isPayoneMethod && !$moptPayoneMain->getHelper()->isCosumerScoreCheckValid($config['consumerscoreLifetime'], $userData['moptPayoneConsumerscoreResult'], $userData['moptPayoneConsumerscoreDate']))
+      if ($isPayoneMethod)
+      {
+        $userCconsumerScoreData = $moptPayoneMain->getHelper()->getConsumerScoreDataFromUserId($user['additional']['user']['id']);
+      }
+
+      if ($isPayoneMethod && !$moptPayoneMain->getHelper()->isCosumerScoreCheckValid($config['consumerscoreLifetime'], $userCconsumerScoreData['moptPayoneConsumerscoreResult'], $userCconsumerScoreData['moptPayoneConsumerscoreDate']))
       {
         $params                                    = $moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($billingAddressData, $paymentID);
         $response                                  = $this->performConsumerScoreCheck($config, $params, $this->Application()->PayoneBuilder());
@@ -618,9 +628,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     }
 
     //check if consumerscore is active and check if necessary
-    $cosumerScoreChecktype = $moptPayoneMain->getHelper()->isConsumerScoreToBeCheckedWithBasketValue($config, $basketValue);
+    $cosumerScoreChecktype  = $moptPayoneMain->getHelper()->isConsumerScoreToBeCheckedWithBasketValue($config, $basketValue);
+    $userCconsumerScoreData = $moptPayoneMain->getHelper()->getConsumerScoreDataFromUserId($userId);
     if ($cosumerScoreChecktype
-            && !$moptPayoneMain->getHelper()->isCosumerScoreCheckValid($config['consumerscoreLifetime'], $userData['additional']['user']['moptPayoneConsumerscoreResult'], $userData['additional']['user']['moptPayoneConsumerscoreDate']))
+            && !$moptPayoneMain->getHelper()->isCosumerScoreCheckValid($config['consumerscoreLifetime'], $userCconsumerScoreData['moptPayoneConsumerscoreResult'], $userCconsumerScoreData['moptPayoneConsumerscoreDate']))
     {
 
       //perform check if prechoice is configured
@@ -651,8 +662,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onValidateStep2(Enlight_Hook_HookArgs $arguments)
   {
-    $ret    = $arguments->getReturn();
-    $caller = $arguments->getSubject();
+    $ret = $arguments->getReturn();
 
     //@TODO do nothing when non pay1 method is choosen - tricky and maybe not possible
 
@@ -671,7 +681,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $basketValue = $basket['AmountNumeric'];
 
     //perform check if addresscheck is enabled
-    if ($billingAddressChecktype = $moptPayoneMain->getHelper()->isBillingAddressToBeChecked($config))
+    $billingAddressChecktype = $moptPayoneMain->getHelper()->isBillingAddressToBeChecked($config);
+    if ($billingAddressChecktype)
     {
       //if nothing in basket, don't check and  just reset the validation date and result
       if (!$basketValue)
@@ -692,7 +703,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         $post             = $_POST["register"];
         $billingFormData  = $post['billing'];
         $personalFormData = $post['personal'];
-
+        
         $params   = $moptPayoneMain->getParamBuilder()->getAddressCheckParams($billingFormData, $personalFormData);
         $response = $this->performAddressCheck($config, $params, $this->Application()->PayoneBuilder(), $moptPayoneMain, $billingAddressChecktype);
 
@@ -748,37 +759,44 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
           $moptPayoneMain->getHelper()->saveBillingAddressError($userId, $response);
 
+          $request = $this->Application()->Front()->Request(); // used to forward user
           switch ($config['adresscheckFailureHandling'])
           {
             case 0: //cancel transaction -> redirect to payment choice
               {
-                $caller->forward('payment', 'account', null, array('sTarget' => 'checkout'));
+                $this->forward($request, 'payment', 'account', null, array('sTarget' => 'checkout'));
+                $arguments->setReturn($ret);
+                return;
               }
               break;
             case 1: // reenter address -> redirect to address form
               {
-                $caller->forward('billing', 'account', null, array('sTarget' => 'checkout'));
+                $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
+                $arguments->setReturn($ret);
+                return;
               }
               break;
             case 2: // perform consumerscore check
               {
-                //@TODO needs 2 be implemented
                 $params   = $moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($billingFormData);
                 $response = $this->performConsumerScoreCheck($config, $params, $this->Application()->PayoneBuilder());
                 if (!$this->handleConsumerScoreCheckResult($response, $config, $userId))
                 {
-                  $caller->forward('payment', 'account', null, array('sTarget' => 'checkout'));
+                  $this->forward($request, 'payment', 'account', null, array('sTarget' => 'checkout'));
+                  $arguments->setReturn($ret);
+                  return;
                 }
+              }
+              break;
+            case 3: // proceed
+              {
+                $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
+                return;
               }
               break;
           }
 
           $arguments->setReturn($ret);
-          return;
-        }
-        else
-        {
-          //something else happened
           return;
         }
       }
@@ -819,10 +837,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onValidateStep2ShippingAddress(Enlight_Hook_HookArgs $arguments)
   {
-    $ret     = $arguments->getReturn();
-    $subject = $arguments->getSubject();
+    $returnValues = $arguments->getReturn();
 
-    if (!empty($ret['sErrorMessages']))
+    if (!empty($returnValues['sErrorMessages']))
     {
       return;
     }
@@ -893,27 +910,32 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
         //@TODO save corrected address or status to session and check on next save address call?
         //@TODO save result and or display 
-        $arguments->setReturn($ret);
+        $arguments->setReturn($returnValues);
         return;
       }
       if ($response->getStatus() == 'INVALID' || $response->getStatus() == 'ERROR')
       {
-        $ret['sErrorFlag']['mopt_payone_addresscheck']     = true;
-        $ret['sErrorMessages']['mopt_payone_addresscheck'] = utf8_encode($response->getCustomermessage());
+        $returnValues['sErrorFlag']['mopt_payone_addresscheck']     = true;
+        $returnValues['sErrorMessages']['mopt_payone_addresscheck'] = utf8_encode($response->getCustomermessage());
 
 
         $moptPayoneMain->getHelper()->saveShippingAddressError($userId, $response);
+        $request = $this->Application()->Front()->Request(); // used to forward user
 
         switch ($config['adresscheckFailureHandling'])
         {
           case 0: //cancel transaction -> redirect to payment choice
             {
-              $subject->forward('payment', 'account', null, array('sTarget' => 'checkout'));
+              $this->forward($request, 'payment', 'account', null, array('sTarget' => 'checkout'));
+              $arguments->setReturn($returnValues);
+              return;
             }
             break;
           case 1: // reenter address -> redirect to address form
             {
-              $subject->forward('shipping', 'account', null, array('sTarget' => 'checkout'));
+              $this->forward($request, 'shipping', 'account', null, array('sTarget' => 'checkout'));
+              $arguments->setReturn($returnValues);
+              return;
             }
             break;
           case 2: // perform consumerscore check
@@ -923,14 +945,16 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
               if (!$this->handleConsumerScoreCheckResult($response, $config, $userId))
               {
                 //cancel transaction
-                $subject->forward('payment', 'account', null, array('sTarget' => 'checkout'));
+                $this->forward($request, 'payment', 'account', null, array('sTarget' => 'checkout'));
+                $arguments->setReturn($returnValues);
+                return;
               }
             }
             break;
         }
 
 
-        $arguments->setReturn($ret);
+        $arguments->setReturn($returnValues);
         return;
       }
       else
@@ -940,7 +964,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       }
     }
 
-    $arguments->setReturn($ret);
+    $arguments->setReturn($returnValues);
   }
 
   /**
@@ -974,18 +998,17 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onValidateStep3(Enlight_Hook_HookArgs $arguments)
   {
-    $ret     = $arguments->getReturn();
-    $subject = $arguments->getSubject();
+    $returnValues = $arguments->getReturn();
 
-    if (!empty($ret['sErrorMessages']))
+    if (!empty($returnValues['sErrorMessages']))
     {
-      $arguments->setReturn($ret); //@TODO check if neccessary
+      $arguments->setReturn($returnValues); //@TODO check if neccessary
       return;
     }
 
     $userId         = Shopware()->Session()->sUserId;
     $post           = $_POST['moptPaymentData'];
-    $paymentId      = $ret['paymentData']['name'];
+    $paymentId      = $returnValues['paymentData']['name'];
     $moptPayoneMain = $this->Application()->PayoneMain();
 
     //check if pay1 method, exit if not and delete pament data 
@@ -1009,9 +1032,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     if ($error)
     {
-      $sErrorMessages[]                      = Shopware()->Snippets()->getNamespace('frontend/account/internalMessages')->get('ErrorFillIn', 'Please fill in all red fields');
-      $ret['checkPayment']['sErrorFlag']     = $paymentData['sErrorFlag'];
-      $ret['checkPayment']['sErrorMessages'] = $sErrorMessages;
+      $sErrorMessages[]                               = Shopware()->Snippets()->getNamespace('frontend/account/internalMessages')->get('ErrorFillIn', 'Please fill in all red fields');
+      $returnValues['checkPayment']['sErrorFlag']     = $paymentData['sErrorFlag'];
+      $returnValues['checkPayment']['sErrorMessages'] = $sErrorMessages;
     }
     else
     {
@@ -1022,7 +1045,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $userData        = $user['additional']['user'];
       $billingFormData = $user['billingaddress'];
 
-      if ($ret['paymentData']['name'] === 'mopt_payone__acc_debitnote')
+      if ($returnValues['paymentData']['name'] === 'mopt_payone__acc_debitnote')
       {
         //check if bankaccountcheck is enabled 
         $bankAccountChecktype = $moptPayoneMain->getHelper()->getBankAccountCheckType($config);
@@ -1032,7 +1055,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
           $params = $moptPayoneMain->getParamBuilder()->buildBankaccountcheck($paymentId, $bankAccountChecktype, $billingFormData['countryID'], $paymentData['formData']);
 
           $payoneServiceBuilder = $this->Application()->PayoneBuilder();
-          $service = $payoneServiceBuilder->buildServiceVerificationBankAccountCheck();
+          $service              = $payoneServiceBuilder->buildServiceVerificationBankAccountCheck();
           $service->getServiceProtocol()->addRepository(Shopware()->Models()->getRepository(
                           'Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'
                   ));
@@ -1042,19 +1065,19 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
           if ($response->getStatus() == 'ERROR' || $response->getStatus() == 'INVALID')
           {
-            $ret['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
-            $ret['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = utf8_encode($response->getCustomermessage());
+            $returnValues['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
+            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = utf8_encode($response->getCustomermessage());
             Shopware()->Session()->moptPayment = $post;
-            $arguments->setReturn($ret);
+            $arguments->setReturn($returnValues);
             return;
           }
-          
+
           if ($response->getStatus() == 'BLOCKED')
           {
-            $ret['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
-            $ret['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht möglich.';
+            $returnValues['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
+            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht möglich.';
             Shopware()->Session()->moptPayment = $post;
-            $arguments->setReturn($ret);
+            $arguments->setReturn($returnValues);
             return;
           }
         }
@@ -1067,18 +1090,17 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         {
           // add flag and data to session 
           $session->moptConsumerScoreCheckNeedsUserAgreement = true;
-          $_SESSION['moptConsumerScoreCheckNeedsUserAgreement']                                    = true;
+          $_SESSION['moptConsumerScoreCheckNeedsUserAgreement']                                             = true;
           $session->moptPaymentData = $paymentData;
           $session->moptPaymentId = $paymentId;
+          $_SESSION['moptPaymentId']                                                                        = $paymentId;
           //@TODO submit target
-          //reload page
-          $ret['checkPayment']['sErrorFlag']['mopt_payone_consumerscorecheck_needs_agreement']     = true;
-          $ret['checkPayment']['sErrorMessages']['mopt_payone_consumerscorecheck_needs_agreement'] = 'Zustimmung zur Bonitätsprüfung';
-          //@TODO choose next action according to config
-          //abort, redirect to payment page, save result
-          //proceed
+          //reload page and consumerscore error hint to system
+          $returnValues['checkPayment']['sErrorFlag']['mopt_payone_consumerscorecheck_needs_agreement']     = true;
+          $returnValues['checkPayment']['sErrorMessages']['mopt_payone_consumerscorecheck_needs_agreement'] = 'Zustimmung zur Bonitätsprüfung';
+
           Shopware()->Session()->moptPayment = $post;
-          $arguments->setReturn($ret);
+          $arguments->setReturn($returnValues);
           return;
         }
       }
@@ -1088,7 +1110,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $moptPayoneMain->getHelper()->savePaymentData($userId, $paymentData);
     }
 
-    $arguments->setReturn($ret);
+    $arguments->setReturn($returnValues);
   }
 
   public function onUpdatePayment(Enlight_Hook_HookArgs $arguments)
@@ -1307,16 +1329,17 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   {
     $moptPayoneMain = $this->Application()->PayoneMain();
 
-    //@TODO handle ERROR, VALID, INVALID and move to feedbackhandler
+    // handle ERROR, VALID, INVALID 
+    // @TODO move to feedbackhandler
     if ($response->getStatus() == 'VALID')
     {
-      //@TODO save result
+      //save result
       $moptPayoneMain->getHelper()->saveConsumerScoreCheckResult($userId, $response);
       return true;
     }
     else
     {
-      //@TODO save error
+      //save error
       $moptPayoneMain->getHelper()->saveConsumerScoreError($userId, $response);
       //choose next action according to config
       if ($config['consumerscoreFailureHandling'] == 0)
@@ -1513,7 +1536,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         'parent'     => $parent,
     ));
     $this->createMenuItem(array(
-        'label'      => 'Hilfe',
+        'label'      => 'Hilfe & Support',
         'controller' => 'MoptSupportPayone',
         'action'     => 'Index',
         'class'      => 'sprite-lifebuoy',
@@ -1769,7 +1792,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     if ($order = Shopware()->Models()->getRepository('Shopware\Models\Order\Order')->findOneBy(array('number' => $orderNumber)))
     {
       $paymentId = $order->getPayment()->getId();
-      $helper->mapTransactionStatus($order, $main->getPayoneConfig($paymentId));
+      $helper->mapTransactionStatus($order, $main->getPayoneConfig($paymentId), null, false);
     }
   }
 
@@ -1803,6 +1826,35 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             $db->quote($attributes->getMoptPayoneIsFinallyCaptured()) . ', ', $sql);
 
     $args->setReturn($sql);
+  }
+
+  /**
+   * Forward the request to the given controller, module and action with the given parameters.
+   * copied from Enlight_Controller_Action
+   * and customized
+   *
+   * @param object $request
+   * @param string $action
+   * @param string $controller
+   * @param string $module
+   * @param array  $params
+   */
+  public function forward($request, $action, $controller = null, $module = null, array $params = null)
+  {
+    if ($params !== null)
+    {
+      $request->setParams($params);
+    }
+    if ($controller !== null)
+    {
+      $request->setControllerName($controller);
+      if ($module !== null)
+      {
+        $request->setModuleName($module);
+      }
+    }
+
+    $request->setActionName($action)->setDispatched(false);
   }
 
 }

@@ -47,14 +47,17 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
 
     me.columns = me.getColumns();
     me.toolbar = me.getToolbar();
+
     me.dockedItems = [];
     me.dockedItems.push(me.toolbar);
     me.dockedItems.push({
       dock: 'bottom',
       xtype: 'pagingtoolbar',
       displayInfo: true,
-      store: me.store
+      store: me.store,
+      width: "50%"
     });
+
     me.callParent(arguments);
   },
   /**
@@ -65,21 +68,22 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
   getColumns: function() {
     var me = this;
     var columns = [{
-        header: '{s name=mopt_apilog_payone/grid/column_id}Id{/s}',
+        header: '{s name=mopt_apilog_payone/grid/column_id}ID{/s}',
         dataIndex: 'id',
         flex: 1
       }, {
-        header: '{s name=mopt_apilog_payone/grid/column_request}Request{/s}',
+        header: '{s name=mopt_apilog_payone/grid/column_request}Typ{/s}',
         dataIndex: 'request',
         flex: 1
       }, {
-        header: '{s name=mopt_apilog_payone/grid/column_response}Response{/s}',
+        header: '{s name=mopt_apilog_payone/grid/column_response}Status{/s}',
         dataIndex: 'response',
         flex: 1
       }, {
-        header: '{s name=mopt_apilog_payone/grid/column_mode}Live Mode?{/s}',
+        header: '{s name=mopt_apilog_payone/grid/column_mode}Betriebsmodus{/s}',
         dataIndex: 'liveMode',
-        flex: 1
+        flex: 1,
+        renderer: me.renderLivemode
       }, {
         header: '{s name=mopt_apilog_payone/grid/column_merchant}Merchant ID{/s}',
         dataIndex: 'merchantId',
@@ -89,17 +93,17 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
         dataIndex: 'portalId',
         flex: 1
       }, {
-        header: '{s name=mopt_apilog_payone/grid/column_date}Date{/s}',
+        header: '{s name=mopt_apilog_payone/grid/column_date}Datum{/s}',
         dataIndex: 'creationDate',
         flex: 1,
         xtype: 'datecolumn',
         renderer: me.renderDate
       }, {
-        header: '{s name=mopt_apilog_payone/grid/column_request_details}Request Details{/s}',
+        header: '{s name=mopt_apilog_payone/grid/column_request_details}Request{/s}',
         dataIndex: 'requestDetails',
         flex: 1
       }, {
-        header: '{s name=mopt_apilog_payone/grid/column_response_details}Response Details{/s}',
+        header: '{s name=mopt_apilog_payone/grid/column_response_details}Response{/s}',
         dataIndex: 'responseDetails',
         flex: 1
       }
@@ -114,6 +118,9 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
    */
   renderDate: function(value) {
     return Ext.util.Format.date(value) + ' ' + Ext.util.Format.date(value, 'H:i:s');
+  },
+  renderLivemode: function(value) {
+    return value === true ? 'live' : 'test';
   },
   /**
    * Renders the action-column
@@ -159,7 +166,30 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
   },
   getToolbar: function()
   {
-    var items = [];
+
+    var items = [
+      '-',
+      {
+        xtype: 'textfield',
+        name: 'search',
+        id: 'searchField'
+      },
+      {
+        xtype: 'button',
+        name: 'searchbtn',
+        text: 'Suchen',
+        listeners: {
+          click: {
+            element: 'el', //bind to the underlying el property on the panel
+            fn: function() {
+              data = Ext.getCmp('searchField').getValue();
+              
+              console.log(data);
+            }
+          },
+        }
+      }
+    ];
     return Ext.create('Ext.toolbar.Toolbar', {
       dock: 'bottom',
       ui: 'shopware-ui',

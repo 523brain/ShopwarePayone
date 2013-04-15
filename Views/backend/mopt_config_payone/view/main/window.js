@@ -7,7 +7,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Window', {
   border: false,
   autoShow: true,
   layout: 'fit',
-  width: 900,
+  width: 920,
   height: 650,
   maximizable: true,
   minimizable: true,

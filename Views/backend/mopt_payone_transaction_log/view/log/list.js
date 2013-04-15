@@ -52,7 +52,8 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.view.log.List',
 			dock: 'bottom',
 			xtype: 'pagingtoolbar',
 			displayInfo: true,
-			store: me.store
+			store: me.store,
+      width: '50%'
 		});
     
     me.callParent(arguments);
@@ -82,11 +83,11 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.view.log.List',
     var me = this;
 
     var columns = [{
-      header: '{s name=mopt_payone_transaction_log/grid/column_id}Id{/s}',
+      header: '{s name=mopt_payone_transaction_log/grid/column_id}ID{/s}',
       dataIndex: 'id',
       flex: 1
     }, {
-      header: '{s name=mopt_payone_transaction_log/grid/column_transactionId}Transaction ID{/s}',
+      header: '{s name=mopt_payone_transaction_log/grid/column_transactionId}Transaktionsid{/s}',
       dataIndex: 'transactionId',
       flex: 1
     }, {
@@ -94,9 +95,10 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.view.log.List',
       dataIndex: 'orderNr',
       flex: 1
     }, {
-      header: '{s name=mopt_payone_transaction_log/grid/column_mode}Live Mode{/s}',
+      header: '{s name=mopt_payone_transaction_log/grid/column_mode}Betriebsmodus{/s}',
       dataIndex: 'liveMode',
-      flex: 1
+      flex: 1,
+      renderer: me.renderLivemode
     },{
       header: '{s name=mopt_payone_transaction_log/grid/column_portal_id}Portal ID{/s}',
       dataIndex: 'portalId',
@@ -106,13 +108,13 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.view.log.List',
       dataIndex: 'status',
       flex: 1
     },{
-      header: '{s name=mopt_payone_transaction_log/grid/column_creation_date}Created{/s}',
+      header: '{s name=mopt_payone_transaction_log/grid/column_creation_date}erstellt{/s}',
       dataIndex: 'creationDate',
       flex: 1,
       xtype: 'datecolumn',
       renderer: me.renderDate
     },{
-      header: '{s name=mopt_payone_transaction_log/grid/column_update_date}Updated{/s}',
+      header: '{s name=mopt_payone_transaction_log/grid/column_update_date}geändert{/s}',
       dataIndex: 'updateDate',
       flex: 1,
       xtype: 'datecolumn',
@@ -123,19 +125,7 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.view.log.List',
       flex: 1,
       xtype: 'datecolumn',
       renderer: me.renderDate
-    }, {
-      header: '{s name=mopt_payone_transaction_log/grid/column_sequence_nr}Sequence{/s}',
-      dataIndex: 'sequenceNr',
-      flex: 1
-    },{
-      header: '{s name=mopt_payone_transaction_log/grid/column_claim}Claim{/s}',
-      dataIndex: 'claim',
-      flex: 1
-    },{
-      header: '{s name=mopt_payone_transaction_log/grid/column_balance}Balance{/s}',
-      dataIndex: 'balance',
-      flex: 1
-    }
+    }, 
     ];
 
     return columns;
@@ -145,10 +135,38 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.view.log.List',
   {
     return Ext.util.Format.date(value) + ' ' + Ext.util.Format.date(value, 'H:i:s');
   },
+  renderLivemode: function(value)
+  {
+    return value === true ? 'live' : 'test';
+  },
           
   getToolbar: function()
   {
-		var items = [];
+		var items = [
+      '-',
+      {
+        xtype: 'textfield',
+        name: 'searchTrans',
+        id: 'searchTransField'
+      },
+      {
+        xtype: 'button',
+        name: 'searchbtn',
+        text: 'Suchen',
+        listeners: {
+          click: {
+            element: 'el', //bind to the underlying el property on the panel
+            fn: function() {
+              data = Ext.getCmp('searchTransField').getValue();
+              
+              console.log(data);
+            }
+          },
+        }
+      }
+      
+      
+    ];
 		return Ext.create('Ext.toolbar.Toolbar', {
 			dock: 'top',
 			ui: 'shopware-ui',

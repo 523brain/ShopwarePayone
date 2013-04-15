@@ -10,7 +10,7 @@
 //{block name="backend/mopt_apilog_payone/view/main/detailwindow"}
 Ext.define('Shopware.apps.MoptApilogPayone.view.main.Detailwindow', {
 	extend: 'Enlight.app.Window',
-    title: '{s name=window_title}Response-Request Informationen{/s}',
+    title: '{s name=window_detail_title}API-Log Details{/s}',
     cls: Ext.baseCSSPrefix + 'detail-window',
     alias: 'widget.moptPayoneApilogMainDetailWindow',
     border: false,
@@ -29,6 +29,7 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.main.Detailwindow', {
      */
     initComponent: function() {
         var me = this;
+        me.title = 'API-Log Details zu ID ' + me.itemSelected;
         me.items = [{
             xtype: 'moptPayoneApilogMainDetail',
             itemSelected: me.itemSelected,

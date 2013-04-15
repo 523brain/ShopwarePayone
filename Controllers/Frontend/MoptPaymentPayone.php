@@ -646,10 +646,10 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   public function ajaxGetConsumerScoreUserAgreementAction()
   {
     $session = Shopware()->Session();
-    unset($session->moptConsumerScoreCheckNeedsUserAgreement);
-
+   
     //get config
-    $config = $this->moptPayoneMain->getPayoneConfig($session->moptPaymentId);
+    $config = $this->moptPayoneMain->getPayoneConfig($_SESSION['moptPaymentId']);
+
     //add custom texts to view
     if ($config['consumerscoreNoteActive'])
     {
@@ -659,6 +659,10 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     {
       $this->View()->consumerscoreAgreementMessage = $config['consumerscoreAgreementMessage'];
     }
+    
+     unset($session->moptConsumerScoreCheckNeedsUserAgreement);
+     unset($_SESSION['moptPaymentId']);
+     unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
   }
 
   //@TODO retrun false or true to choose next action in ajax form

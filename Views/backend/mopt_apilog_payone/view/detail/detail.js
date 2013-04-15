@@ -52,7 +52,7 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.detail.Detail', {
     me.items = [
       {
         xtype: 'grid',
-        title: 'Request Daten',
+        title: 'Request',
         width: '50%',
         columns: [
           {
@@ -81,7 +81,7 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.detail.Detail', {
       },
       {
         xtype: 'grid',
-        title: 'Response Daten',
+        title: 'Response',
         width: '50%',
         columns: [
           {
