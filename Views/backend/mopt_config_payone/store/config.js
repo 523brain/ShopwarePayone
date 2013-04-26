@@ -13,7 +13,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.store.Config', {
    * is initialized
    * @boolean
    */
-  autoLoad: true,
+  autoLoad: false,
   /**
    * Define the used model for this store
    * @string
@@ -37,6 +37,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.store.Config', {
       read: '{url controller="MoptConfigPayone" action="getConfig"}',
       update: '{url controller="MoptConfigPayone" action="saveConfig"}',
       payment: '{url controller="MoptConfigPayone" action="getPaymentConfig"}',
+      transactions: '{url controller="MoptPayoneTransactionForward" action="getTransactionForward"}',
     },
     /**
      * Definiert, dass die Kommunikation mit dem Controller

@@ -352,6 +352,22 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
+   * create finance payment object
+   */
+  public function getPaymentFinance($financeType, $router)
+  {
+    $params = array();
+
+    $params['financingtype'] = $financeType;
+    $params['successurl']    = $router->assemble(array('action'            => 'success', 'forceSecure'       => true, 'appendSession'     => true));
+    $params['errorurl'] = $router->assemble(array('action'           => 'failure', 'forceSecure'      => true, 'appendSession'    => true));
+    $params['backurl'] = $router->assemble(array('action'        => 'cancel', 'forceSecure'   => true, 'appendSession' => true));
+
+    $payment = new Payone_Api_Request_Parameter_Authorization_PaymentMethod_Financing($params);
+    return $payment;
+  }
+
+  /**
    * @TODO check for country -> should be done by config and risk management
    * @TODO get shipping provider
    *
@@ -411,23 +427,32 @@ class Mopt_PayoneParamBuilder
 
     $transaction = new Payone_Api_Request_Parameter_Invoicing_Transaction($params);
 
-    $counter = 0;
     foreach ($basket['content'] as $article)
     {
       $params = array();
 
       $params['id'] = $article['articleID']; //article number
-      $params['pr'] = $article['price'] * 100; //price in cents
+      $params['pr'] = $article['priceNumeric']; //price in cents
       $params['no'] = $article['quantity']; // ordered quantity
       $params['de'] = $article['articlename']; // description check length
       $params['va'] = $article['tax_rate']; // vat
-//      $params['sd[' . $counter . ']'] = $article['']; // optional - delivery date
-//      $params['ed[' . $counter . ']'] = $article['']; // optional -  end of delivery
-
-      $item = new Payone_Api_Request_Parameter_Invoicing_Item($params);
+      $params['it'] = Payone_Api_Enum_InvoicingItemType::GOODS;
+      $item         = new Payone_Api_Request_Parameter_Invoicing_Item($params);
       $transaction->addItem($item);
-      $counter++;
     }
+
+    //add shipment as position
+    $params = array();
+
+    $params['id'] = 'Shipment'; //article number
+    $params['pr'] = $basket['sShippingcostsWithTax']; //price in cents
+    $params['no'] = 1; // ordered quantity
+    $params['de'] = 'Versandkosten'; // description check length
+    $params['va'] = number_format($basket['sShippingcostsTax'], 0, '.', ''); // vat
+    $params['it'] = Payone_Api_Enum_InvoicingItemType::SHIPMENT;
+
+    $item = new Payone_Api_Request_Parameter_Invoicing_Item($params);
+    $transaction->addItem($item);
 
     return $transaction;
   }

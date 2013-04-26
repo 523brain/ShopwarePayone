@@ -63,6 +63,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     $service = $this->moptPayoneInitTransactionService($key, $validIps);
 
     $response = $service->handleByPost();
+    $payoneRequest = $service->getMapper()->mapByArray($_POST);
 
     if($response->getStatus() == $response::STATUS_OK)
     {
@@ -74,7 +75,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
       $this->moptPayone__helper->mapTransactionStatus($order, $config, $request->getParam('txaction'));
       
       // forward status to configured urls
-      $this->moptPayoneForwardTransactionStatus($config, $request);
+      $this->moptPayoneForwardTransactionStatus($config, $payoneRequest, $request->getParam('txaction'));
     }
     
     echo $response->getStatus();
@@ -92,15 +93,39 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     return $service;
   }
   
-  protected function moptPayoneForwardTransactionStatus($payoneConfig, $request)
+  protected function moptPayoneForwardTransactionStatus($payoneConfig, $request, $payoneStatus)
   {
-    //check if urls are confiigured for this status
-    
-    //build params
-    
-    //send status to each url
+    //check if urls are configured for this status
+    $configKey = 'trans' . ucfirst($payoneStatus);
+    if (isset($payoneConfig[$configKey]))
+    {
+      $forwardingUrls = explode(';', $payoneConfig[$configKey]);
+
+      $params = $request->toArray();
+
+      //send transaction to each url
+      foreach ($forwardingUrls as $url)
+      {
+        // new HTTP request to some HTTP address
+        $client = new Zend_Http_Client($url);
+        // set Timeout
+        $client->setConfig(array('timeout' => 60));
+
+        // set parameters
+        $client->setParameterPost($params);
+
+        // POST request
+        $response = $client->request(Zend_Http_Client::POST);
+
+        if ($response->getBody() != 'TSOK')
+        {
+          //@TODO log errors
+        }
+      }
+    }
   }
 
+  
   public function Plugin()
   {
     return Shopware()->Plugins()->Frontend()->MoptPaymentPayone();

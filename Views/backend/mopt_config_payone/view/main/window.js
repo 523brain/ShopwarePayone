@@ -16,12 +16,12 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Window', {
    */
   initComponent: function() {
     var me = this;
-        
+
     me.items = [{
         xtype: 'mopt-config-main-detail',
         data: me.data,
       }];
-    
+
 
     me.callParent(arguments);
   },

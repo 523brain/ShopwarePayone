@@ -323,6 +323,66 @@ class MoptPayoneConfig extends ModelEntity
    */
   private $checkAccount;
 
+  /**
+   * @ORM\Column(name="trans_appointed", type="text", nullable=true, unique=false)
+   */
+  private $transAppointed;
+
+  /**
+   * @ORM\Column(name="trans_capture", type="text", nullable=true, unique=false)
+   */
+  private $transCapture;
+
+  /**
+   * @ORM\Column(name="trans_paid", type="text", nullable=true, unique=false)
+   */
+  private $transPaid;
+
+  /**
+   * @ORM\Column(name="trans_underpaid", type="text", nullable=true, unique=false)
+   */
+  private $transUnderpaid;
+
+  /**
+   * @ORM\Column(name="trans_cancelation", type="text", nullable=true, unique=false)
+   */
+  private $transCancelation;
+
+  /**
+   * @ORM\Column(name="trans_refund", type="text", nullable=true, unique=false)
+   */
+  private $transRefund;
+
+  /**
+   * @ORM\Column(name="trans_debit", type="text", nullable=true, unique=false)
+   */
+  private $transDebit;
+
+  /**
+   * @ORM\Column(name="trans_reminder", type="text", nullable=true, unique=false)
+   */
+  private $transReminder;
+
+  /**
+   * @ORM\Column(name="trans_vauthorization", type="text", nullable=true, unique=false)
+   */
+  private $transVauthorization;
+
+  /**
+   * @ORM\Column(name="trans_vsettlement", type="text", nullable=true, unique=false)
+   */
+  private $transVsettlement;
+
+  /**
+   * @ORM\Column(name="trans_transfer", type="text", nullable=true, unique=false)
+   */
+  private $transTransfer;
+
+  /**
+   * @ORM\Column(name="trans_invoice", type="text", nullable=true, unique=false)
+   */
+  private $transInvoice;
+
   public function fromArray($array = array())
   {
     foreach ($array as $property => $value)
@@ -909,6 +969,126 @@ class MoptPayoneConfig extends ModelEntity
   public function setCheckAccount($checkAccount)
   {
     $this->checkAccount = $checkAccount;
+  }
+
+  public function getTransAppointed()
+  {
+    return $this->transAppointed;
+  }
+
+  public function setTransAppointed($transAppointed)
+  {
+    $this->transAppointed = $transAppointed;
+  }
+
+  public function getTransCapture()
+  {
+    return $this->transCapture;
+  }
+
+  public function setTransCapture($transCapture)
+  {
+    $this->transCapture = $transCapture;
+  }
+
+  public function getTransPaid()
+  {
+    return $this->transPaid;
+  }
+
+  public function setTransPaid($transPaid)
+  {
+    $this->transPaid = $transPaid;
+  }
+
+  public function getTransUnderpaid()
+  {
+    return $this->transUnderpaid;
+  }
+
+  public function setTransUnderpaid($transUnderpaid)
+  {
+    $this->transUnderpaid = $transUnderpaid;
+  }
+
+  public function getTransCancelation()
+  {
+    return $this->transCancelation;
+  }
+
+  public function setTransCancelation($transCancelation)
+  {
+    $this->transCancelation = $transCancelation;
+  }
+
+  public function getTransRefund()
+  {
+    return $this->transRefund;
+  }
+
+  public function setTransRefund($transRefund)
+  {
+    $this->transRefund = $transRefund;
+  }
+
+  public function getTransDebit()
+  {
+    return $this->transDebit;
+  }
+
+  public function setTransDebit($transDebit)
+  {
+    $this->transDebit = $transDebit;
+  }
+
+  public function getTransReminder()
+  {
+    return $this->transReminder;
+  }
+
+  public function setTransReminder($transReminder)
+  {
+    $this->transReminder = $transReminder;
+  }
+
+  public function getTransVauthorization()
+  {
+    return $this->transVauthorization;
+  }
+
+  public function setTransVauthorization($transVauthorization)
+  {
+    $this->transVauthorization = $transVauthorization;
+  }
+
+  public function getTransVsettlement()
+  {
+    return $this->transVsettlement;
+  }
+
+  public function setTransVsettlement($transVsettlement)
+  {
+    $this->transVsettlement = $transVsettlement;
+  }
+
+  public function getTransTransfer()
+  {
+    return $this->transTransfer;
+  }
+
+  public function setTransTransfer($transTransfer)
+  {
+    $this->transTransfer = $transTransfer;
+  }
+
+  public function getTransInvoice()
+  {
+    return $this->transInvoice;
+  }
+
+  public function setTransInvoice($transInvoice)
+  {
+    $this->transInvoice = $transInvoice;
   }
 
 }

@@ -24,7 +24,7 @@ class Repository extends ModelRepository
             ->setParameter(1, $paymentId);
 
     $hydrationMode = $asArray ? \Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY : \Doctrine\ORM\AbstractQuery::HYDRATE_OBJECT;
-    $result = $builder->getQuery()->getOneOrNullResult($hydrationMode);
+    $result        = $builder->getQuery()->getOneOrNullResult($hydrationMode);
 
 
     //if empty result, load global config
@@ -35,8 +35,9 @@ class Repository extends ModelRepository
 
     return $result;
   }
-  
-  public function deleteConfigByPaymentId($paymentId) {
+
+  public function deleteConfigByPaymentId($paymentId)
+  {
     
   }
 

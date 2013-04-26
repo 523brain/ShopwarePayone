@@ -112,6 +112,18 @@ Ext.define('Shopware.apps.MoptConfigPayone.model.Config', {
     { name: 'extra', type: 'string'},
     { name: 'checkCc', type: 'boolean'},
     { name: 'checkAccount', type: 'int'},
+    { name: 'transAppointed', type: 'string'},
+    { name: 'transCapture', type: 'string'},
+    { name: 'transPaid', type: 'string'},
+    { name: 'transUnderpaid', type: 'string'},
+    { name: 'transCancelation', type: 'string'},
+    { name: 'transRefund', type: 'string'},
+    { name: 'transDebit', type: 'string'},
+    { name: 'transReminder', type: 'string'},
+    { name: 'transVauthorization', type: 'string'},
+    { name: 'transVsettlement', type: 'string'},
+    { name: 'transTransfer', type: 'string'},
+    { name: 'transInvoice', type: 'string'},
   ],
   /**
    * Auch Models können über eigene Proxies verfügen. Dadurch

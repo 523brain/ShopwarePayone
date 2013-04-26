@@ -10,8 +10,8 @@ Ext.define('Shopware.apps.MoptConfigPayone', {
   loadPath:'{url action=load}',
 
   controllers: [ 'Main' ],
-  stores: [ 'Config', 'Signal' ],
-  models: [ 'Config', 'Signal' ],
+  stores: [ 'Config', 'Signal', 'Payments' ],
+  models: [ 'Config', 'Signal', 'Payment' ],
   views: [ 'main.Window', 'main.Detail' ],
 
   launch: function() {

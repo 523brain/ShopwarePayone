@@ -13,7 +13,7 @@ Ext.define('Shopware.apps.MoptConfigPayone.store.Payments', {
    * is initialized
    * @boolean
    */
-  autoLoad: true,
+  autoLoad: false,
   /**
    * Define the used model for this store
    * @string

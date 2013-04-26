@@ -153,7 +153,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   public function financeAction()
   {
     $response = $this->mopt_payone__finance();
-    $this->mopt_payone__handleDirectFeedback($response);
+    $this->mopt_payone__handleRedirectFeedback($response);
   }
 
   /**
@@ -277,14 +277,20 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
    */
   protected function mopt_payone__finance()
   {
-    //@TODO check/collect config options
-    $config = $this->moptPayoneMain->getPayoneConfig();
+    $paymentId = $this->getPaymentShortName();
 
-    $request = $this->mopt_payone__prepareRequestAuthorize();
-    $request->setAid($config['subaccountId']);
-    $request->setClearingtype('fin');
+    if ($paymentId == 'mopt_payone__fin_billsafe')
+    {
+      $financeType = 'BSV';
+    }
+    else
+    {
+      $financeType = 'CFR';
+    }
 
-    $response = $this->service->authorize($request);
+    $config   = $this->moptPayoneMain->getPayoneConfig($this->getPaymentId());
+    $payment  = $this->moptPayoneMain->getParamBuilder()->getPaymentFinance($financeType, $this->Front()->Router());
+    $response = $this->mopt_payone__buildAndCallPayment($config, 'fnc', $payment);
 
     return $response;
   }
@@ -468,7 +474,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     $request->setClearingtype($clearingType);
 
-    if ($config['submitBasket'])
+    if ($config['submitBasket'] || $clearingType === 'fnc')
     {
       $request->setInvoicing($paramBuilder->getInvoicing($this->getBasket()));
     }

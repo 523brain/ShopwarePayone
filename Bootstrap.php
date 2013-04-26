@@ -65,10 +65,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 //     );
 //     $tool->dropSchema($classes);
 //     
-//     $classes = array(
-//     $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig'),
-//     );
-//     $tool->dropSchema($classes);
+     $classes = array(
+        $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig'),
+    );
+    $tool->dropSchema($classes);
 
     return true;
   }
@@ -272,9 +272,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $this->subscribeEvent(
             'Enlight_Controller_Dispatcher_ControllerPath_Backend_MoptPayoneOrder', 'moptRegisterController_Backend_MoptPayoneOrder');
-    
-    $this->subscribeEvent(
-            'Enlight_Controller_Dispatcher_ControllerPath_Backend_MoptPayoneTransactionForward', 'onGetTransactionForwardControllerBackend');
   }
 
   public function moptRegisterController_Backend_MoptPayoneOrder()
@@ -325,8 +322,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     //perform consumerScoreCheck if configured
     $config = $moptPayoneMain->getPayoneConfig($paymentID);
-
-    if ($config['consumerscoreActive'] && $config['consumerscoreCheckMoment'] == 0)
+    
+    if ($isPayoneMethod && $config['consumerscoreActive'] && $config['consumerscoreCheckMoment'] == 0)
     {
       //get user data
       $userData = $user['additional']['user'];
@@ -1488,19 +1485,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     {
       // ignore
     }
-    
-    $classes = array(
-        $em->getClassMetadata('Shopware\CustomModels\MoptPayoneTransactionForward\MoptPayoneTransactionForward'),
-    );
-
-    try
-    {
-      $schemaTool->createSchema($classes);
-    }
-    catch (\Doctrine\ORM\Tools\ToolsException $e)
-    {
-      // ignore
-    }
 
     // add payment table
     $sql = "CREATE TABLE IF NOT EXISTS `s_plugin_mopt_payone_payment_data` (`userId` int(11) NOT NULL,`moptPaymentData` text NOT NULL, PRIMARY KEY (`userId`))";
@@ -1591,14 +1575,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         'active'     => 1,
         'parent'     => $parent,
     ));
-//    $this->createMenuItem(array(
-//        'label'      => 'Transaktionsstatus-Weiterleitung',
-//        'controller' => 'MoptPayoneTransactionForward',
-//        'action'     => 'Index',
-//        'class'      => 'sprite-cards-stack',
-//        'active'     => 1,
-//        'parent'     => $parent,
-//    ));
     $this->createMenuItem(array(
         'label'      => 'Hilfe & Support',
         'controller' => 'MoptSupportPayone',
@@ -1679,17 +1655,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             $this->Path() . 'Views/'
     );
     return $this->Path() . 'Controllers/Backend/MoptPayoneTransactionLog.php';
-  }
-
-  public function onGetTransactionForwardControllerBackend()
-  {
-    $this->Application()->Snippets()->addConfigDir(
-            $this->Path() . 'Snippets/'
-    );
-    $this->Application()->Template()->addTemplateDir(
-            $this->Path() . 'Views/'
-    );
-    return $this->Path() . 'Controllers/Backend/MoptPayoneTransactionForward.php';
   }
 
   /**
