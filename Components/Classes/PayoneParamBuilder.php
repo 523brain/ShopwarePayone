@@ -44,9 +44,9 @@ class Mopt_PayoneParamBuilder
     }
     else
     {
-      $authParameters['mode'] = 'test';
+      $authParameters['mode']     = 'test';
     }
-//    $authParameters['encoding'] = 'UTF-8'; // optional param default is: ISO-8859-1
+    $authParameters['encoding'] = 'UTF-8'; // optional param default is: ISO-8859-1
 
     return $authParameters;
   }
@@ -78,8 +78,16 @@ class Mopt_PayoneParamBuilder
     $params['currency']       = $order->getCurrency();
 
     //create business object (used for settleaccount param)
-    $business           = new Payone_Api_Request_Parameter_Debit_Business();
-    $business->setSettleaccount($finalize ? Payone_Api_Enum_Settleaccount::YES : Payone_Api_Enum_Settleaccount::AUTO);
+    $business    = new Payone_Api_Request_Parameter_Capture_Business();
+    $paymentName = $order->getPayment()->getName();
+    if ($paymentName === 'mopt_payone__acc_payinadvance' || preg_match('#mopt_payone__ibt#', $paymentName))
+    {
+      $business->setSettleaccount($finalize ? Payone_Api_Enum_Settleaccount::YES : Payone_Api_Enum_Settleaccount::NO);
+    }
+    else
+    {
+      $business->setSettleaccount($finalize ? Payone_Api_Enum_Settleaccount::YES : Payone_Api_Enum_Settleaccount::AUTO);
+    }
     $params['business'] = $business;
 
     return $params;
@@ -112,7 +120,6 @@ class Mopt_PayoneParamBuilder
   {
     $attribute = $this->payoneHelper->getOrCreateAttribute($order);
     $seqNo     = $attribute->getMoptPayoneSequencenumber();
-
     return $seqNo + 1;
   }
 
@@ -199,7 +206,17 @@ class Mopt_PayoneParamBuilder
 //    $params['birthday']        = $billingAddress['birthday']; //@TODO check if date needs to be converted
     $params['language']        = strtolower($userData['additional']['country']['countryiso']);
     $params['ustid']           = $billingAddress['firstname'];
-//    $params['ip'] = $billingAddress['firstname']; optional @TODO check if it's legal
+
+    if (!isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+    {
+      $clientIP = $_SERVER['REMOTE_ADDR'];
+    }
+    else
+    {
+      $clientIP     = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+    $params['ip'] = $clientIP;
+
 
     $personalData = new Payone_Api_Request_Parameter_Authorization_PersonalData($params);
 
@@ -395,15 +412,15 @@ class Mopt_PayoneParamBuilder
     $transaction = new Payone_Api_Request_Parameter_Invoicing_Transaction($params);
 
     $counter = 0;
-    foreach ($basket as $article)
+    foreach ($basket['content'] as $article)
     {
       $params = array();
 
-      $params['id[' . $counter . ']'] = $article['articleID']; //article number
-      $params['pr[' . $counter . ']'] = $article['price'] * 100; //price in cents
-      $params['no[' . $counter . ']'] = $article['quantity']; // ordered quantity
-      $params['de[' . $counter . ']'] = $article['additional_details']['description']; // description @TODO check length?
-      $params['va[' . $counter . ']'] = $article['tax_rate']; // vat
+      $params['id'] = $article['articleID']; //article number
+      $params['pr'] = $article['price'] * 100; //price in cents
+      $params['no'] = $article['quantity']; // ordered quantity
+      $params['de'] = $article['articlename']; // description check length
+      $params['va'] = $article['tax_rate']; // vat
 //      $params['sd[' . $counter . ']'] = $article['']; // optional - delivery date
 //      $params['ed[' . $counter . ']'] = $article['']; // optional -  end of delivery
 

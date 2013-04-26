@@ -22,7 +22,17 @@ Ext.define('Shopware.apps.Order.controller.MoptPayoneDetail', {
       return;
     }
     
-    Ext.MessageBox.confirm('Gutschrift', 'Sind Sie sicher ?', function (response) {
+    var selectionModel = grid.getSelectionModel();
+    var positions = selectionModel.getSelection();
+    var amount = 0;
+    
+    
+    for (var i = 0; i < positions.length; i++)
+    {
+      amount+=positions[i].get('total');
+    }
+    
+    Ext.MessageBox.confirm('Gutschrift', 'Sie haben ' + positionIds.length + ' Position(en) mit einem Gesamtbetrag von <span style="color: red;">' + amount.toFixed(2) + '&#8364 </span>markiert. <br> Sind Sie sicher ?', function (response) {
       if ( response !== 'yes' ) {
         return;
       }
@@ -37,14 +47,14 @@ Ext.define('Shopware.apps.Order.controller.MoptPayoneDetail', {
           var jsonData = Ext.JSON.decode(response.responseText);
           if (jsonData.success)
           {
-            Ext.Msg.alert('Success', 'Debit successful');
+            Ext.Msg.alert('Gutschrift', 'Die Gutschrift wurde erfolgreich durchgeführt.');
 
             //reload form
             options.callback(order);
           }
           else
           {
-            Ext.Msg.alert('Failed', jsonData.error_message);
+            Ext.Msg.alert('Gutschrift', jsonData.error_message);
           }
         }
       });
@@ -59,11 +69,22 @@ Ext.define('Shopware.apps.Order.controller.MoptPayoneDetail', {
       return;
     }
     
+    var selectionModel = grid.getSelectionModel();
+    var positions = selectionModel.getSelection();
+    var amount = 0;
+    
+    
+    for (var i = 0; i < positions.length; i++)
+    {
+      amount+=positions[i].get('total');
+    }
+    
+    
     //bit wierd message-box... plausible way doesn't seem to work (see: http://stackoverflow.com/questions/12263291/extjs-4-or-4-1-messagebox-custom-buttons)
     Ext.MessageBox.show({
       title: 'Zahlung einziehen',
-      msg: 'Welche Art des Zahlungseinzugs möchten Sie vornehmen ?',
-      buttonText: { yes: '(Teil-)Capture', no: 'Finales Capture', cancel: 'Abbrechen' },
+      msg: 'Sie haben ' + positionIds.length + ' Position(en) mit einem Gesamtbetrag von <span style="color: red;">' + amount.toFixed(2) + '&#8364 </span> markiert. <br> Welche Art des Zahlungseinzugs möchten Sie vornehmen ?',
+      buttonText: { yes: '(Teil-)Geldeinzug', no: 'Finaler Geldeinzug', cancel: 'Abbrechen' },
       fn: function(btn){
         if(btn === 'yes') {
           me.moptPayoneCallCapture(order, positionIds, false, options);
@@ -87,14 +108,14 @@ Ext.define('Shopware.apps.Order.controller.MoptPayoneDetail', {
         var jsonData = Ext.JSON.decode(response.responseText);
         if (jsonData.success)
         {
-          Ext.Msg.alert('Success', 'Capture successful');
+          Ext.Msg.alert('Geldeinzug', 'Der Geldeinzug wurde erfolgreich durchgeführt.');
           
           //reload form
           options.callback(order);
         }
         else
         {
-          Ext.Msg.alert('Failed', jsonData.error_message);
+          Ext.Msg.alert('Geldeinzug', jsonData.error_message);
         }
       }
     });

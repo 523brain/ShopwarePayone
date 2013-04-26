@@ -146,7 +146,7 @@ class Shopware_Controllers_Backend_MoptConfigPayone extends Shopware_Controllers
                     ->where('a.name LIKE \'mopt_payone__%\'')
                     ->getQuery()->getArrayResult();
 
-    array_unshift($data, array('id'          => null, 'description' => 'keine (global)'));
+    array_unshift($data, array('id'          => null, 'description' => 'Alle (global)'));
 
     $this->View()->assign(array(
         "success"    => true,
@@ -166,7 +166,7 @@ class Shopware_Controllers_Backend_MoptConfigPayone extends Shopware_Controllers
     {
       if ($filter['property'] === 'payment_id')
       {
-        
+
         $data = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->PayoneMain()->getPayoneConfig($filter['value'], true, true);
 
         //getPaymentName 
@@ -179,11 +179,15 @@ class Shopware_Controllers_Backend_MoptConfigPayone extends Shopware_Controllers
 
         if ($paymentData && $paymentData['name'])
         {
+          if (preg_match('#mopt_payone#', $paymentData['name']))
+          {
+            $data['extra'] = 'p1';
+          }
           if ($paymentData['name'] === 'mopt_payone__acc_debitnote')
           {
             $data['extra'] = 'debit';
           }
-          elseif (preg_match('#mopt_payone__cc#', $paymentData['name']))
+          if (preg_match('#mopt_payone__cc#', $paymentData['name']))
           {
             $data['extra'] = 'cc';
           }

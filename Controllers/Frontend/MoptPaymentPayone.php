@@ -468,6 +468,11 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     $request->setClearingtype($clearingType);
 
+    if ($config['submitBasket'])
+    {
+      $request->setInvoicing($paramBuilder->getInvoicing($this->getBasket()));
+    }
+
     if ($payment)
     {
       $request->setPayment($payment);
@@ -620,6 +625,10 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     $payoneParams['hash'] = $serviceGenerateHash->generate($request, $config['apiKey']);
 
+//    if($config['checkCc'])
+
+    $this->View()->moptPayoneCheckCc = $config['checkCc'];
+
     $this->View()->sFormData = $paymentData;
     $this->View()->moptPayoneParams = $payoneParams;
   }
@@ -638,6 +647,10 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     {
       $this->View()->moptAddressCheckTarget = $session->moptAddressCheckTarget;
     }
+    else
+    {
+      $this->View()->moptAddressCheckTarget = 'checkout';
+    }
   }
 
   /**
@@ -646,9 +659,18 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   public function ajaxGetConsumerScoreUserAgreementAction()
   {
     $session = Shopware()->Session();
-   
+
     //get config
-    $config = $this->moptPayoneMain->getPayoneConfig($_SESSION['moptPaymentId']);
+    if ($_SESSION['moptPaymentId'])
+    {
+      $paymentId = $_SESSION['moptPaymentId'];
+    }
+    else
+    {
+      $paymentId = $session->moptPaymentId;
+    }
+
+    $config = $this->moptPayoneMain->getPayoneConfig($paymentId);
 
     //add custom texts to view
     if ($config['consumerscoreNoteActive'])
@@ -659,23 +681,45 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     {
       $this->View()->consumerscoreAgreementMessage = $config['consumerscoreAgreementMessage'];
     }
-    
-     unset($session->moptConsumerScoreCheckNeedsUserAgreement);
-     unset($_SESSION['moptPaymentId']);
-     unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
+
+    unset($session->moptConsumerScoreCheckNeedsUserAgreement);
+    unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
   }
 
-  //@TODO retrun false or true to choose next action in ajax form
   public function checkConsumerScoreAction()
   {
-    $session                       = Shopware()->Session();
-    $userId                        = $session->sUserId;
-    $config                        = $this->moptPayoneMain->getPayoneConfig($session->moptPaymentId);
+    $session = Shopware()->Session();
+    $userId  = $session->sUserId;
+
+    unset($session->moptConsumerScoreCheckNeedsUserAgreement);
+    unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
+
+    //get config
+    if ($_SESSION['moptPaymentId'])
+    {
+      $paymentId = $_SESSION['moptPaymentId'];
+    }
+    else
+    {
+      $paymentId = $session->moptPaymentId;
+    }
+
+    //get payment data
+    if ($_SESSION['moptPaymentData'])
+    {
+      $paymentData = $_SESSION['moptPaymentData'];
+    }
+    else
+    {
+      $paymentData = $session->moptPaymentData;
+    }
+
+    $config                        = $this->moptPayoneMain->getPayoneConfig($paymentId);
     $user                          = Shopware()->Modules()->Admin()->sGetUserData();
     $billingAddressData            = $user['billingaddress'];
     $billingAddressData['country'] = $billingAddressData['countryID'];
     //perform consumerscorecheck
-    $params                        = $this->moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($billingAddressData, $session->moptPaymentId);
+    $params                        = $this->moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($billingAddressData, $paymentId);
     $service                       = $this->payoneServiceBuilder->buildServiceVerificationConsumerscore();
     $service->getServiceProtocol()->addRepository(Shopware()->Models()->getRepository(
                     'Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'
@@ -693,53 +737,78 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     {
       //save result
       $this->moptPayoneMain->getHelper()->saveConsumerScoreCheckResult($userId, $response);
+      unset($session->moptConsumerScoreCheckNeedsUserAgreement);
+      unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
+      unset($session->moptPaymentId);
+      echo json_encode(true);
     }
     else
     {
       //save error
       $this->moptPayoneMain->getHelper()->saveConsumerScoreError($userId, $response);
-      //@TODO choose next action according to config
-      //abort
-//      $this->forward('payment', 'account', null, array('sTarget' => 'checkout'));
-      //proceed
+      unset($session->moptConsumerScoreCheckNeedsUserAgreement);
+      unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
+      unset($session->moptPaymentId);
+      //choose next action according to config
+      if ($config['consumerscoreFailureHandling'] == 0)
+      {
+        //abort
+        //delete payment data and set to payone prepayment
+        $this->moptPayoneMain->getHelper()->deletePaymentData($userId);
+        $this->moptPayoneMain->getHelper()->setPayonePrepaymentAsPayment($userId);
+        echo json_encode(false);
+      }
+      else
+      {
+        //proceed 
+        echo json_encode(true);
+      }
     }
-
-    unset($session->moptConsumerScoreCheckNeedsUserAgreement);
-    unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
-    unset($session->moptPaymentId);
   }
 
   public function doNotCheckConsumerScoreAction()
   {
     $session = Shopware()->Session();
-    $userId  = $session->sUserId;
-    $config  = $this->moptPayoneMain->getPayoneConfig($session->moptPaymentId);
+
+    unset($session->moptConsumerScoreCheckNeedsUserAgreement);
+    unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
+
+    $userId = $session->sUserId;
+    $config = $this->moptPayoneMain->getPayoneConfig($session->moptPaymentId);
 
     $this->moptPayoneMain->getHelper()->saveConsumerScoreDenied($userId);
-
-    //save payment Data
-    if ($session->moptPayment)
-    {
-      $this->moptPayoneMain->getHelper()->savePaymentData($userId, $session->moptPayment);
-    }
 
     unset($session->moptConsumerScoreCheckNeedsUserAgreement);
     unset($_SESSION['moptConsumerScoreCheckNeedsUserAgreement']);
     unset($session->moptPaymentId);
 
-//    if($config['consumerscoreFailureHandling'] == 0)
-//    {
-//      return $this->forward('payment', 'account', null, array('sTarget' => 'checkout'));
-//    }
-//    else
-//    {
-//      return $this->forward('checkout', 'confirm', null, array('sAGB' => true));
-//    }
+    if ($config['consumerscoreFailureHandling'] == 0)
+    {
+      //abort
+      //delete payment data and set to p1 prepeyment
+      $this->moptPayoneMain->getHelper()->deletePaymentData($userId);
+      $this->moptPayoneMain->getHelper()->setPayonePrepaymentAsPayment($userId);
+      echo json_encode(false);
+    }
+    else
+    {
+      //proceed
+      echo json_encode(true);
+    }
   }
 
   public function saveOriginalAddressAction()
   {
     $session = Shopware()->Session();
+
+    $userId   = $session->sUserId;
+    $response = unserialize($session->moptAddressCheckCorrectedAddress);
+    $config   = $this->moptPayoneMain->getPayoneConfig();
+
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringValue($response->getPersonstatus(), $config);
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
+    $this->moptPayoneMain->getHelper()->saveBillingAddressCheckResult($userId, $response, $mappedPersonStatus);
+
     unset($session->moptAddressCheckNeedsUserVerification);
     unset($session->moptAddressCheckOriginalAddress);
     unset($session->moptAddressCheckCorrectedAddress);
@@ -750,8 +819,12 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     $session  = Shopware()->Session();
     $userId   = $session->sUserId;
     $response = unserialize($session->moptAddressCheckCorrectedAddress);
+    $config   = $this->moptPayoneMain->getPayoneConfig();
 
     $this->moptPayoneMain->getHelper()->saveCorrectedBillingAddress($userId, $response);
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringValue($response->getPersonstatus(), $config);
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
+    $this->moptPayoneMain->getHelper()->saveBillingAddressCheckResult($userId, $response, $mappedPersonStatus);
 
     unset($session->moptAddressCheckNeedsUserVerification);
     unset($session->moptAddressCheckOriginalAddress);
@@ -802,6 +875,23 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   {
     $user = $this->getUser();
     return $user['additional']['payment']['id'];
+  }
+
+  /**
+   * Returns the full basket data as array
+   *
+   * @return array
+   */
+  public function getBasket()
+  {
+    if (!empty(Shopware()->Session()->sOrderVariables['sBasket']))
+    {
+      return Shopware()->Session()->sOrderVariables['sBasket'];
+    }
+    else
+    {
+      return null;
+    }
   }
 
 }

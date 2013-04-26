@@ -59,5 +59,34 @@ class Shopware_Controllers_Backend_MoptPayoneTransactionLog extends Shopware_Con
     //$this->View()->assign(array('success' => true, 'data' => $details[$type]));
     $this->View()->assign(array('success' => true, 'data'    => $result));
   }
+  
+  public function getSearchResultAction()
+  {
+    $filters = $this->Request()->get('filter');
+
+    $builder = Shopware()->Models()->createQueryBuilder();
+    $builder->select('log')
+            ->from('Shopware\CustomModels\MoptPayoneTransactionLog\MoptPayoneTransactionLog log');
+
+    foreach ($filters as $filter)
+    {
+      if ($filter['property'] == 'search' && !empty($filter['value']))
+      {
+//        $builder->where('log.id = ?1 
+//          OR log.transactionId = ?1
+//          OR log.status = ?1
+//          OR log.portalId = ?1
+//        ')->setParameter(1, $filter['value']);
+        $builder->where($builder->expr()->orx($builder->expr()->like('log.details', $builder->expr()->literal(
+                                        '%' . $filter['value'] . '%'))));
+      }
+    }
+
+    $builder->setMaxResults(20);
+    $result = $builder->getQuery()->getArrayResult();
+    $total  = Shopware()->Models()->getQueryCount($builder->getQuery());
+
+    $this->View()->assign(array('success' => true, 'data'    => $result, 'total'   => $total));
+  }
 
 }

@@ -53,8 +53,8 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       }
       else
       {
-        //show error message
-        $response = array('success' => false, 'error_message' => $response->getErrormessage());
+        //show error message, don't show PAYONE error message to shop owner
+        $response = array('success' => false, 'error_message' => 'Gutschrift (zur Zeit) nicht möglich.');
       }
     }
     catch(Exception $e)
@@ -108,8 +108,8 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       }
       else
       {
-        //show error message
-        $response = array('success' => false, 'error_message' => $response->getErrormessage());
+        //show error message, don't show PAYONE error message to shop owner
+        $response = array('success' => false, 'error_message' => 'Capture (zur Zeit) nicht möglich.');
       }
     }
     catch(Exception $e)
@@ -123,10 +123,8 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
   protected function moptPayoneUpdateSequenceNumber($order, $isAuth = false)
   {
     $attribute = $this->moptPayone__helper->getOrCreateAttribute($order);
-    
     $newSeq = $attribute->getMoptPayoneSequencenumber() + 1;
     $attribute->setMoptPayoneSequencenumber($newSeq);
-    
     if($isAuth)
     {
       $attribute->setMoptPayoneIsAuthorized(true);
@@ -143,13 +141,14 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       return false;
     }
     
+    //according to PAYONE, perform less checks in shop, let the API validate
     $attribute = $this->moptPayone__helper->getOrCreateAttribute($order);
-    
-    //is already authorized ? 
-    if($attribute->getMoptPayoneIsAuthorized())
-    {
-      return false;
-    }
+//    
+//    //is already authorized ? 
+//    if($attribute->getMoptPayoneIsAuthorized())
+//    {
+//      return false;
+//    }
     
     return true;
   }

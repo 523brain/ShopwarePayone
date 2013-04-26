@@ -8,7 +8,7 @@ Ext.define('Shopware.apps.Order.view.detail.MoptPayonePosition', {
     
     me.moptPayoneCapturePositionsButton = Ext.create('Ext.button.Button', {
       iconCls: 'sprite-money-coin',
-      text: 'PAYONE: Capture',
+      text: 'Positionen einziehen',
       action: 'moptPayoneCapturePositions',
       handler: function() {
         me.fireEvent('moptPayoneCapturePositions', me.record, me.orderPositionGrid, {
@@ -21,7 +21,7 @@ Ext.define('Shopware.apps.Order.view.detail.MoptPayonePosition', {
     
     me.moptPayoneDebitPositionsButton = Ext.create('Ext.button.Button', {
       iconCls: 'sprite-money-coin',
-      text: 'PAYONE: Gutschrift',
+      text: 'Positionen gutschreiben',
       action: 'moptPayoneDebitPositions',
       handler: function() {
         me.fireEvent('moptPayoneDebitPositions', me.record, me.orderPositionGrid, {
@@ -50,12 +50,12 @@ Ext.define('Shopware.apps.Order.view.detail.MoptPayonePosition', {
     columns = me.callParent(arguments);
     
     columns.push({
-        header: 'PAYONE: eingezogen',
+        header: 'Eingezogen',
         dataIndex: 'moptPayoneCaptured',
         flex:1
       },
       {
-        header: 'PAYONE: gutgeschrieben',
+        header: 'Gutgeschrieben',
         dataIndex: 'moptPayoneDebit',
         flex:1
       }

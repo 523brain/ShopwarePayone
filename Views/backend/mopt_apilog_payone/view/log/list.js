@@ -3,7 +3,6 @@
  */
 
 //{namespace name=backend/mopt_apilog_payone/main}
-
 /**
  * Shopware UI - Log view list
  *
@@ -46,7 +45,7 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
     me.store = me.logStore;
 
     me.columns = me.getColumns();
-    me.toolbar = me.getToolbar();
+    me.toolbar = me.getToolbar(me);
 
     me.dockedItems = [];
     me.dockedItems.push(me.toolbar);
@@ -55,8 +54,10 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
       xtype: 'pagingtoolbar',
       displayInfo: true,
       store: me.store,
-      width: "50%"
+      width: '50%'
     });
+
+
 
     me.callParent(arguments);
   },
@@ -135,7 +136,7 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
     var data = [];
     data.push(Ext.DomHelper.markup({
       tag: 'img',
-      'class': 'x-action-col-icon sprite-minus-circle',
+      class: 'x-action-col-icon sprite-minus-circle',
       tooltip: '{s name=grid/actioncolumn/buttonTooltip}Delete log{/s}',
       cls: 'sprite-minus-circle',
       onclick: "Ext.getCmp('" + this.id + "').fireEvent('deleteColumn', " + rowIndex + ");"
@@ -164,34 +165,86 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
       }
     });
   },
-  getToolbar: function()
+  getToolbar: function(me)
   {
 
     var items = [
       '-',
-      {
+      , {
         xtype: 'textfield',
         name: 'search',
-        id: 'searchField'
-      },
-      {
+        id: 'searchField',
+        dock: 'top',
+        fieldLabel: 'Freitext'
+      }, {
         xtype: 'button',
         name: 'searchbtn',
         text: 'Suchen',
-        listeners: {
-          click: {
-            element: 'el', //bind to the underlying el property on the panel
-            fn: function() {
-              data = Ext.getCmp('searchField').getValue();
-              
-              console.log(data);
-            }
-          },
+        id: 'searchBtn',
+        width: '50px',
+        dock: 'top',
+        handler: function(btn, event) {
+          var value = Ext.getCmp('searchField').getValue();
+          var stori = me.store;
+
+          data = stori.load({
+            action: 'search',
+            pageSize: 20,
+            filters: [{
+                property: 'search',
+                value: value
+              }],
+          });
+        }
+      },
+      '-',
+      {
+        xtype: 'textfield',
+        name: 'searchTransID',
+        id: 'searchFieldTransID',
+        dock: 'top',
+        fieldLabel: 'Transaction ID'
+      },
+      {
+        xtype: 'button',
+        name: 'searchbtnTransID',
+        text: 'Suchen',
+        id: 'searchBtnTransID',
+        width: '50px',
+        dock: 'top',
+        handler: function(btn, event) {
+          var value = Ext.getCmp('searchFieldTransID').getValue();
+          var stori = me.store;
+
+          data = stori.load({
+            action: 'search',
+            pageSize: 20,
+            filters: [{
+                property: 'searchtrans',
+                value: value
+              }]
+          });
+        }
+      }, '-',
+      {
+        xtype: 'button',
+        name: 'resetTransBtn',
+        text: 'Suche zurücksetzen',
+        id: 'resetTransBtn',
+        dock: 'top',
+        handler: function(btn, event) {
+          var stori = me.store;
+          Ext.getCmp('searchFieldTransID').setValue('');
+          Ext.getCmp('searchField').setValue('');
+          data = stori.load({
+            action: 'search',
+            pageSize: 20,
+          });
         }
       }
     ];
     return Ext.create('Ext.toolbar.Toolbar', {
-      dock: 'bottom',
+      dock: 'top',
       ui: 'shopware-ui',
       items: items
     });

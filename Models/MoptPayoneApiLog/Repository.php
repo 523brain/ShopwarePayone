@@ -26,8 +26,6 @@ class Repository extends ModelRepository
 
   public function save($request, $response)
   {
-//    var_dump($request);
-//    var_dump($response); exit;
     $apiLog = new \Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog();
 
     //special transaction status handling

@@ -15,7 +15,7 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.main.Window', {
   alias: 'widget.log-main-window',
   border: false,
   autoShow: true,
-  height: 545,
+  height: 550,
   width: 1000,
   stateful: true,
   stateId: 'shopware-log-window',

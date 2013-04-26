@@ -7,8 +7,8 @@
  *
  * This store contains all logs.
  */
-//{block name="backend/mopt_payone_transaction_log/store/logs"}
-Ext.define('Shopware.apps.MoptPayoneTransactionLog.store.Logs', {
+//{block name="backend/mopt_payone_transaction_forward/store/mapping"}
+Ext.define('Shopware.apps.MoptPayoneTransactionForward.store.Mapping', {
   /**
    * Extend for the standard ExtJS 4
    * @string
@@ -25,15 +25,15 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.store.Logs', {
    * @integer
    */
   pageSize: 20,
-  remoteFilter: true,
-  remoteSort: true,
+//  remoteFilter: true,
+//  remoteSort: true,
   /**
    * Define the used model for this store
    * @string
    */
-  model: 'Shopware.apps.MoptPayoneTransactionLog.model.Log',
+  model: 'Shopware.apps.MoptPayoneTransactionForward.model.Mapping',
   // Default sorting for the store
-  sortOnLoad: true,
+//  sortOnLoad: true,
   /**
    * Configure the data communication
    * @object
@@ -41,9 +41,9 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.store.Logs', {
   proxy: {
     type: 'ajax',
     api: {
-      read: '{url controller="MoptPayoneTransactionLog" action="getTransactionLogs"}',
-      detail: '{url controller="MoptApilogPayone" action="getDetailLog"}',
-      search: '{url controller="MoptPayoneTransactionLog" action="getSearchResult"}'
+      read: '{url controller="MoptPayoneTransactionForward" action="getTransactionForward"}',
+      remove: '{url controller="MoptPayoneTransactionForward" action="getTransactionForward"}',
+      save: '{url controller="MoptPayoneTransactionForward" action="getTransactionForward"}'
     },
     /**
      * Configure the data reader
@@ -54,11 +54,7 @@ Ext.define('Shopware.apps.MoptPayoneTransactionLog.store.Logs', {
       root: 'data',
       //total values, used for paging
       totalProperty: 'total'
-    },
-    sorters: {
-      property: 'creationDate',
-      direction: 'DESC'
     }
-  },
+  }
 });
 //{/block}

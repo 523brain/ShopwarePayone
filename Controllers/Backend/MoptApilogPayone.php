@@ -51,7 +51,7 @@ class Shopware_Controllers_Backend_MoptApilogPayone extends Shopware_Controllers
             'log.id as id', 'log.request as request', 'log.response as response', 'log.liveMode as liveMode', 'log.merchantId as merchantId', 'log.portalId as portalId', 'log.creationDate as creationDate', 'log.requestDetails as requestDetails', 'log.responseDetails as responseDetails'
     )->from('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog', 'log');
 
-    
+
     //order data
     $order = (array) $this->Request()->getParam('sort', array());
     if ($order)
@@ -93,7 +93,7 @@ class Shopware_Controllers_Backend_MoptApilogPayone extends Shopware_Controllers
             ->from('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog', 'log')
             ->where('log.id = ?1')
             ->setParameter(1, $this->Request()->get('id'));
-    
+
     $result = $builder->getQuery()->getArrayResult();
 
     $result = $this->addArrayRequestResponse($result);
@@ -109,7 +109,7 @@ class Shopware_Controllers_Backend_MoptApilogPayone extends Shopware_Controllers
 
       foreach ($result as $key => $entry)
       {
-        $request  = array();
+        $request = array();
         $response = array();
 
         $dataRequest = explode('|', $entry['requestDetails']);
@@ -165,6 +165,57 @@ class Shopware_Controllers_Backend_MoptApilogPayone extends Shopware_Controllers
     $result = $builder->getQuery()->getArrayResult();
     $total  = Shopware()->Models()->getQueryCount($builder->getQuery());
 
+
+    $this->View()->assign(array('success' => true, 'data'    => $result, 'total'   => $total));
+  }
+
+  public function getSearchResultAction()
+  {
+    $filters = $this->Request()->get('filter');
+
+    $builder = Shopware()->Models()->createQueryBuilder();
+    $builder->select(
+            'log.id as id', 'log.request as request', 'log.response as response', 'log.liveMode as liveMode', 'log.merchantId as merchantId', 'log.portalId as portalId', 'log.creationDate as creationDate', 'log.requestDetails as requestDetails', 'log.responseDetails as responseDetails'
+    )->from('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog', 'log');
+
+    foreach ($filters as $filter)
+    {
+      if ($filter['property'] == 'search' && !empty($filter['value']))
+      {
+//        $builder->where('log.id = ?1 
+//          OR log.request = ?1
+//          OR log.response = ?1
+//          OR log.liveMode = ?1
+//          OR log.merchantId = ?1
+//          OR log.portalId = ?1
+//          OR log.creationDate = ?1
+//        ')->setParameter(1, $filter['value']);
+//        $builder->where('log.id = ?1 
+//          OR log.request = ?1
+//          OR log.response = ?1
+//          OR log.merchantId = ?1
+//          OR log.portalId = ?1
+//          OR log.creationDate = ?1
+//        ')->setParameter(1, $filter['value']);
+//        
+         $builder->where($builder->expr()->orx($builder->expr()->like('log.requestDetails', $builder->expr()->literal(
+                                        '%' . $filter['value'] . '%')),
+                 $builder->expr()->like('log.responseDetails', $builder->expr()->literal(
+                                        '%' . $filter['value'] . '%'))
+                 ));
+        
+      }
+      elseif ($filter['property'] == 'searchtrans' && !empty($filter['value']))
+      {
+        $builder->where($builder->expr()->orx($builder->expr()->like('log.responseDetails', $builder->expr()->literal(
+                                        '%txid=' . $filter['value'] . '%'))));
+      }
+    }
+
+
+    $builder->setMaxResults(20);
+    $result = $builder->getQuery()->getArrayResult();
+    $total  = Shopware()->Models()->getQueryCount($builder->getQuery());
 
     $this->View()->assign(array('success' => true, 'data'    => $result, 'total'   => $total));
   }

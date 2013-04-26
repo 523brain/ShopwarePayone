@@ -250,6 +250,12 @@ class Mopt_PayoneHelper
       return false;
     }
 
+    $session = Shopware()->Session();
+    if ($session->moptAddressCheckNeedsUserVerification)
+    {
+      return false;
+    }
+
     $billingAddressChecktype = $this->getAddressChecktypeFromId($config['adresscheckBillingAdress']);
 
     return $billingAddressChecktype;
@@ -296,7 +302,15 @@ class Mopt_PayoneHelper
       return false;
     }
 
-//no check when basket value outside configured values
+    //check if seperate shipping address is saved
+    $sql        = 'SELECT `id` FROM `s_user_shippingaddress` WHERE userID = ?';
+    $shippingId = Shopware()->Db()->fetchOne($sql, $userId);
+    if (!$shippingId)
+    {
+      return false;
+    }
+
+    //no check when basket value outside configured values
     if ($basketValue < $config['adresscheckMinBasket'] || $basketValue > $config['adresscheckMaxBasket'])
     {
       return false;
@@ -526,13 +540,13 @@ class Mopt_PayoneHelper
   public function saveShippingAddressError($userId, $response)
   {
     //get user address id
-    $sql       = 'SELECT `id` FROM `s_user_shippingaddress` WHERE userID = ?';
-    $billingId = Shopware()->Db()->fetchOne($sql, $userId);
+    $sql        = 'SELECT `id` FROM `s_user_shippingaddress` WHERE userID = ?';
+    $shippingId = Shopware()->Db()->fetchOne($sql, $userId);
 
     //save result
     $sql = 'UPDATE `s_user_shippingaddress_attributes`' .
-            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_result=? WHERE billingID = ?';
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getStatus(), $billingId));
+            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_result=? WHERE shippingID = ?';
+    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getStatus(), $shippingId));
   }
 
   public function saveConsumerScoreCheckResult($userId, $response)
@@ -604,6 +618,15 @@ class Mopt_PayoneHelper
     }
   }
 
+  public function setPayonePrepaymentAsPayment($userId)
+  {
+    $sql    = "SELECT id FROM s_core_paymentmeans WHERE name LIKE 'mopt_payone__acc_payinadvance'";
+    $paymentId = Shopware()->Db()->fetchOne($sql);
+
+      $sql = 'UPDATE s_user SET paymentID = ? WHERE id = ?';
+      Shopware()->Db()->query($sql, array($paymentId, $userId));
+  }
+
   public function savePaymentData($userId, $paymentData)
   {
     $sql         = 'replace into `s_plugin_mopt_payone_payment_data`' .
@@ -615,10 +638,21 @@ class Mopt_PayoneHelper
   public function getShippingAddressAttributesFromUserId($userId)
   {
     //get shippingaddress attribute
-    $sql                = 'SELECT `id` FROM `s_user_shippingaddress` WHERE userID = ?';
-    $shippingId         = Shopware()->Db()->fetchOne($sql, $userId);
-    $sql                = 'SELECT * FROM `s_user_shippingaddress_attributes` WHERE shippingID = ?';
-    $shippingAttributes = Shopware()->Db()->fetchRow($sql, $shippingId);
+    $shippingAttributes = array();
+    $shippingAttributes['moptPayoneAddresscheckResult'] = null;
+    $shippingAttributes['moptPayoneAddresscheckDate']   = null;
+
+    $sql        = 'SELECT `id` FROM `s_user_shippingaddress` WHERE userID = ?';
+    $shippingId = Shopware()->Db()->fetchOne($sql, $userId);
+
+    $sql    = 'SELECT `mopt_payone_addresscheck_result`, `mopt_payone_addresscheck_date` FROM `s_user_shippingaddress_attributes` WHERE shippingID = ?';
+    $result = Shopware()->Db()->fetchAll($sql, $shippingId);
+
+    if ($result)
+    {
+      $shippingAttributes['moptPayoneAddresscheckResult'] = $result[0]['mopt_payone_addresscheck_result'];
+      $shippingAttributes['moptPayoneAddresscheckDate']   = DateTime::createFromFormat('Y-m-d', $result[0]['mopt_payone_addresscheck_date']);
+    }
 
     return $shippingAttributes;
   }
@@ -797,6 +831,60 @@ class Mopt_PayoneHelper
     }
   }
 
+  public function extractShippingCostAsOrderPosition($order)
+  {
+    $dispatch = $order->getDispatch();
+    if (strpos($order->getPayment()->getName(), 'mopt_payone__') !== 0)
+    {
+      return false;
+    }
+    //insert shipping as new order detail
+    $db  = Shopware()->Db();
+    $sql = "INSERT INTO `s_order_details` (`id`, "
+            . " `orderID`, "
+            . "`ordernumber`, "
+            . "`articleID`, "
+            . "`articleordernumber`, "
+            . "`price`, "
+            . "`quantity`, "
+            . "`name`, "
+            . "`status`, "
+            . "`shipped`, "
+            . "`shippedgroup`, "
+            . "`releasedate`, "
+            . "`modus`, "
+            . "`esdarticle`, "
+            . "`taxID`, "
+            . "`tax_rate`, "
+            . "`config`) "
+            . " VALUES ("
+            . "NULL, "
+            . $db->quote($order->getId()) . ", "
+            . $db->quote($order->getNumber()) . ", "
+            . "'0', "
+            . "'SHIPPING', "
+            . $db->quote($order->getInvoiceShipping()) . ", "
+            . "'1', "
+            . $db->quote($dispatch->getName()) . ", "
+            . "'0', "
+            . "'0', "
+            . "'0',"
+            . " NULL, "
+            . "'4', "
+            . "'0', "
+            . "'0', "
+            . "'19',"
+            . " '');";
+    $db->exec($sql);
+
+
+    //set invoiceshipping 2 zero
+    $sql = "UPDATE s_order
+                  SET invoice_shipping = 0
+                  WHERE id = " . $db->quote($order->getId());
+    $db->exec($sql);
+  }
+
   public function getConsumerScoreDataFromUserId($userId)
   {
     $userCconsumerScoreData = array();
@@ -813,6 +901,27 @@ class Mopt_PayoneHelper
     }
 
     return $userCconsumerScoreData;
+  }
+
+  public function getBillingAddresscheckDataFromUserId($userId)
+  {
+    $userBillingAddressCheckData = array();
+    $userBillingAddressCheckData['moptPayoneAddresscheckResult'] = null;
+    $userBillingAddressCheckData['moptPayoneAddresscheckDate']   = null;
+
+    $sql       = 'SELECT `id` FROM `s_user_billingaddress` WHERE userID = ?';
+    $billingId = Shopware()->Db()->fetchOne($sql, $userId);
+
+    $sql    = 'SELECT `mopt_payone_addresscheck_result`, `mopt_payone_addresscheck_date` FROM `s_user_billingaddress_attributes` WHERE billingID = ?';
+    $result = Shopware()->Db()->fetchAll($sql, $billingId);
+
+    if ($result)
+    {
+      $userBillingAddressCheckData['moptPayoneAddresscheckResult'] = $result[0]['mopt_payone_addresscheck_result'];
+      $userBillingAddressCheckData['moptPayoneAddresscheckDate']   = DateTime::createFromFormat('Y-m-d', $result[0]['mopt_payone_addresscheck_date']);
+    }
+
+    return $userBillingAddressCheckData;
   }
 
 }

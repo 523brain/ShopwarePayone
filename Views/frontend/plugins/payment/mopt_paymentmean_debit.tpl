@@ -11,14 +11,6 @@
     <label for="mopt_payone__debit_bankaccountholder">{*s name='PaymentDebitLabelBankcode'}{/s*}Kontoinhaber</label>
     <input name="moptPaymentData[mopt_payone__debit_bankaccountholder]" type="text" id="mopt_payone__debit_bankaccountholder" value="{$form_data.mopt_payone__debit_bankaccountholder|escape}" class="text {if $error_flags.mopt_payone__debit_bankaccountholder}instyle_error{/if}" />
   </p>
-  <p class="none">
-    <label for="mopt_payone__debit_bankcountry">{*s name='PaymentDebitLabelName'}{/s*}Land</label>
-    <select name="moptPaymentData[mopt_payone__debit_bankcountry]" id="mopt_payone__debit_bankcountry" size="1" style="width:auto" class="{if $error_flags.mopt_payone__debit_bankcountry}instyle_error{/if}">
-      <option value="not_choosen">Bitte auswählen...</option>
-      <option value="DE" {if $form_data.mopt_payone__debit_bankcountry == 'DE'}selected="selected"{/if}>Deutschland</option>
-      <option value="AT" {if $form_data.mopt_payone__debit_bankcountry == 'AT'}selected="selected"{/if}>Österreich</option>
-      <option value="CH" {if $form_data.mopt_payone__debit_bankcountry == 'CH'}selected="selected"{/if}>Schweiz</option>
-    </select>
-  </p>
   <p class="description">{*s name='PaymentDebitInfoFields'}{/s*}</p>
+  <input type="hidden" name="moptPaymentData[mopt_payone__debit_bankcountry]" type="text" id="mopt_payone__debit_bankcountry" value="{$sUserData.additional.country.countryiso}"/>
 </div>

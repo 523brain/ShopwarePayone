@@ -47,7 +47,7 @@
           </select>
           {html_select_date prefix='mopt_payone__cc_' end_year='+10' display_days=false display_months=false year_extra='style="width:auto" id="mopt_payone__cc_Year_ajax"'}
         </p>
-        <p class="none">
+        <p class="none" {if !$moptPayoneCheckCc}style="display:none;"{/if}>
           <label for="mopt_payone__cc_cvc_ajax">{*s name='PaymentDebitLabelBankcode'}{/s*}Prüfziffer</label>
           <input name="mopt_payone__cc_cvc" type="text" id="mopt_payone__cc_cvc_ajax" class="text" />
         </p>
