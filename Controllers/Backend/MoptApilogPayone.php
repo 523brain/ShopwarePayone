@@ -109,7 +109,7 @@ class Shopware_Controllers_Backend_MoptApilogPayone extends Shopware_Controllers
 
       foreach ($result as $key => $entry)
       {
-        $request = array();
+        $request  = array();
         $response = array();
 
         $dataRequest = explode('|', $entry['requestDetails']);
@@ -182,28 +182,10 @@ class Shopware_Controllers_Backend_MoptApilogPayone extends Shopware_Controllers
     {
       if ($filter['property'] == 'search' && !empty($filter['value']))
       {
-//        $builder->where('log.id = ?1 
-//          OR log.request = ?1
-//          OR log.response = ?1
-//          OR log.liveMode = ?1
-//          OR log.merchantId = ?1
-//          OR log.portalId = ?1
-//          OR log.creationDate = ?1
-//        ')->setParameter(1, $filter['value']);
-//        $builder->where('log.id = ?1 
-//          OR log.request = ?1
-//          OR log.response = ?1
-//          OR log.merchantId = ?1
-//          OR log.portalId = ?1
-//          OR log.creationDate = ?1
-//        ')->setParameter(1, $filter['value']);
-//        
-         $builder->where($builder->expr()->orx($builder->expr()->like('log.requestDetails', $builder->expr()->literal(
-                                        '%' . $filter['value'] . '%')),
-                 $builder->expr()->like('log.responseDetails', $builder->expr()->literal(
+        $builder->where($builder->expr()->orx($builder->expr()->like('log.requestDetails', $builder->expr()->literal(
+                                        '%' . $filter['value'] . '%')), $builder->expr()->like('log.responseDetails', $builder->expr()->literal(
                                         '%' . $filter['value'] . '%'))
-                 ));
-        
+        ));
       }
       elseif ($filter['property'] == 'searchtrans' && !empty($filter['value']))
       {

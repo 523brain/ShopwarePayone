@@ -65,10 +65,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 //     );
 //     $tool->dropSchema($classes);
 //     
-     $classes = array(
-        $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig'),
-    );
-    $tool->dropSchema($classes);
+//    $classes = array(
+//        $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig'),
+//    );
+//    $tool->dropSchema($classes);
 
     return true;
   }
@@ -243,6 +243,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     //copy attributes from temp-order
     $this->subscribeEvent('Shopware_Modules_Order_SaveOrderAttributes_FilterSQL', 'event_Shopware_Modules_Order_SaveOrderAttributes_FilterSQL');
+
+    // add PAYONE data to pdf
+    $this->subscribeEvent(
+            'Shopware_Components_Document::assignValues::after', 'onBeforeRenderDocument'
+    );
   }
 
   protected function moptRegisterControllers()
@@ -322,7 +327,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     //perform consumerScoreCheck if configured
     $config = $moptPayoneMain->getPayoneConfig($paymentID);
-    
+
     if ($isPayoneMethod && $config['consumerscoreActive'] && $config['consumerscoreCheckMoment'] == 0)
     {
       //get user data
@@ -1489,6 +1494,78 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     // add payment table
     $sql = "CREATE TABLE IF NOT EXISTS `s_plugin_mopt_payone_payment_data` (`userId` int(11) NOT NULL,`moptPaymentData` text NOT NULL, PRIMARY KEY (`userId`))";
     Shopware()->Db()->exec($sql);
+
+    // add PAYONE block for documents
+    $sql = "INSERT INTO `s_core_documents_box` (`documentID`, `name`, `style`, `value`) VALUES
+	(1, 'PAYONE_Footer', 'width: 170mm;\r\nposition:fixed;\r\nbottom:-20mm;\r\nheight: 15mm;', ?),
+	(1, 'PAYONE_Content_Info', ?, ?);";
+            Shopware()->Db()->query($sql, array(
+            '<table style="height: 90px;" border="0" width="100%">'
+                . '<tbody>'
+                . '<tr valign="top">'
+                . '<td style="width: 33%;">'
+                . '<p><span style="font-size: xx-small;">Demo GmbH</span></p>'
+                . '<p><span style="font-size: xx-small;">Steuer-Nr <br />UST-ID: <br />Finanzamt </span><span style="font-size: xx-small;">Musterstadt</span></p>'
+                . '</td>'
+                . '<td style="width: 33%;">'
+                . '<p><span style="font-size: xx-small;">AGB<br /></span></p>'
+                . '<p><span style="font-size: xx-small;">Gerichtsstand ist Musterstadt<br />Erf&uuml;llungsort Musterstadt</span></p>'
+                . '</td>'
+                . '<td style="width: 33%;">'
+                . '<p><span style="font-size: xx-small;">Gesch&auml;ftsf&uuml;hrer</span></p>'
+                . '<p><span style="font-size: xx-small;">Max Mustermann</span></p>'
+                . '</td>'
+                . '</tr>'
+                . '</tbody>'
+                . '</table>',
+            '.payment_instruction, .payment_instruction td, .payment_instruction tr {'
+                . '	margin: 0;'
+                . '	padding: 0;'
+                . '	border: 0;'
+                . '	font-size:8px;'
+                . '	font: inherit;'
+                . '	vertical-align: baseline;'
+                . '}'
+                . '.payment_note {'
+                . '	font-size: 10px;'
+                . '	color: #333;'
+                . '}',
+            '<div class="payment_note">'
+                . '<br/>'
+                . '{$instruction.legalNote}<br/>'
+                . '{$instruction.note}<br/><br/>'
+                . '</div>'
+                . '<table class="payment_instruction">'
+                . '<tr>'
+                . '	<td>Empfänger:</td>'
+                . '	<td>{$instruction.recipient}</td>'
+                . '</tr>'
+                . '<tr>'
+                . '	<td>Kontonr.:</td>'
+                . '	<td>{$instruction.accountNumber}</td>'
+                . '</tr>'
+                . '<tr>'
+                . '	<td>BLZ:</td>'
+                . '	<td>{$instruction.bankCode}</td>'
+                . '</tr>'
+                . '<tr>'
+                . '	<td>Bank:</td>'
+                . '	<td>{$instruction.bankName}</td>'
+                . '</tr>'
+                . '<tr>'
+                . '	<td>Betrag:</td>'
+                . '	<td>{$instruction.amount|currency}</td>'
+                . '</tr>'
+                . '<tr>'
+                . '	<td>Verwendungszweck 1:</td>'
+                . '	<td>{$instruction.reference}</td>'
+                . '</tr>'
+                . '<tr>'
+                . '	<td>Verwendungszweck 2:</td>'
+                . '	<td>{config name=host}</td>'
+                . '</tr>'
+                . '</table>'
+        ));
   }
 
   protected function addAttributes()
@@ -1867,6 +1944,43 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             $db->quote($attributes->getMoptPayoneIsFinallyCaptured()) . ', ', $sql);
 
     $args->setReturn($sql);
+  }
+
+  public function onBeforeRenderDocument(Enlight_Hook_HookArgs $args)
+  {
+    $document = $args->getSubject();
+
+    if ($document->_order->payment['name'] != 'mopt_payone__fin_billsafe')
+    {
+      return;
+    }
+
+    // get PAYONE data from log
+    $moptPayoneMain = $this->Application()->PayoneMain();
+    $payoneData     = $moptPayoneMain->getHelper()->getPayoneAnswerFromOrderTxid($document->_order->order->transactionID);
+    
+    if (!$payoneData)
+    {
+      return;
+    }
+
+    $view               = $document->_view;
+    $paymentInstruction = array();
+    $paymentInstruction['recipient']     = $payoneData['clearing_bankaccountholder'];
+    $paymentInstruction['accountNumber'] = $payoneData['clearing_bankaccount'];
+    $paymentInstruction['bankCode']      = $payoneData['clearing_bankcode'];
+    $paymentInstruction['bankName']      = $payoneData['clearing_bankname'];
+    $paymentInstruction['reference']     = $payoneData['clearing_reference'];
+    $paymentInstruction['amount']        = $payoneData['clearing_bankbic'];
+
+    $document->_template->addTemplateDir(dirname(__FILE__) . '/Views/');
+    $document->_template->assign('instruction', (array) $paymentInstruction);
+    $containerData           = $view->getTemplateVars('Containers');
+    $containerData['Footer'] = $containerData['PAYONE_Footer'];
+    $containerData['Content_Info']          = $containerData['PAYONE_Content_Info'];
+    $containerData['Content_Info']['value'] = $document->_template->fetch('string:' . $containerData['Content_Info']['value']);
+    $containerData['Content_Info']['style'] = '}' . $containerData['Content_Info']['style'] . ' #info {';
+    $view->assign('Containers', $containerData);
   }
 
   /**

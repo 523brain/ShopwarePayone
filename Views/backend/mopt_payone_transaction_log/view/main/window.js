@@ -10,9 +10,9 @@
 //{block name="backend/mopt_payone_transaction_log/view/main/window"}
 Ext.define('Shopware.apps.MoptPayoneTransactionLog.view.main.Window', {
 	extend: 'Enlight.app.Window',
-    title: '{s name=window_title}Log{/s}',
+    title: '{s name=window_title}Transaktion-Log{/s}',
     cls: Ext.baseCSSPrefix + 'log-window',
-    alias: 'widget.log-main-window',
+    alias: 'widget.log-main-window-api',
     border: false,
     autoShow: true,
     layout: 'border',

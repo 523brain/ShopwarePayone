@@ -21,127 +21,106 @@ class Mopt_PayoneHelper
             'name'        => 'mopt_payone__cc_visa',
             'description' => 'PAYONE Visa',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 1,),
         array(
             'name'        => 'mopt_payone__cc_mastercard',
             'description' => 'PAYONE Mastercard',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 2,),
         array(
             'name'        => 'mopt_payone__cc_american_express',
             'description' => 'PAYONE American Express',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 3,),
         array(
             'name'        => 'mopt_payone__cc_carte_blue',
             'description' => 'PAYONE Carte Blue',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 4,),
         array(
             'name'        => 'mopt_payone__cc_diners_club',
             'description' => 'PAYONE Diners Club',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 5,),
         array(
             'name'        => 'mopt_payone__cc_discover',
             'description' => 'PAYONE Discover',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 6,),
         array(
             'name'        => 'mopt_payone__cc_jcb',
             'description' => 'PAYONE JCB',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 7,),
         array(
             'name'        => 'mopt_payone__cc_maestro_international',
             'description' => 'PAYONE Maestro International',
             'template'    => 'mopt_paymentmean_creditcard.tpl',
-//            'action'      => 'mopt_payment_payone_credit_card',
             'position'    => 8,),
         array(
             'name'        => 'mopt_payone__ibt_sofortueberweisung',
             'description' => 'PAYONE Sofortüberweisung',
             'template'    => 'mopt_paymentmean_sofort.tpl',
-//            'action'      => 'mopt_payment_payone_online_transfer',
             'position'    => 9,),
         array(
             'name'        => 'mopt_payone__ibt_giropay',
             'description' => 'PAYONE Giropay',
             'template'    => 'mopt_paymentmean_giropay.tpl',
-//            'action'      => 'mopt_payment_payone_online_transfer',
             'position'    => 10,),
         array(
             'name'        => 'mopt_payone__ibt_eps',
             'description' => 'PAYONE eps',
             'template'    => 'mopt_paymentmean_eps.tpl',
-//            'action'      => 'mopt_payment_payone_online_transfer',
             'position'    => 11,),
         array(
             'name'        => 'mopt_payone__ibt_post_efinance',
             'description' => 'PAYONE Post-Finance EFinance',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_online_transfer',
             'position'    => 12,),
         array(
             'name'        => 'mopt_payone__ibt_post_finance_card',
             'description' => 'PAYONE Post-Finance Card',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_online_transfer',
             'position'    => 13,),
         array(
             'name'        => 'mopt_payone__ibt_ideal',
             'description' => 'PAYONE iDeal',
             'template'    => 'mopt_paymentmean_ideal.tpl',
-//            'action'      => 'mopt_payment_payone_online_transfer',
             'position'    => 14,),
         array(
             'name'        => 'mopt_payone__ewallet_paypal',
             'description' => 'PAYONE PayPal',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_ewallet',
             'position'    => 15,),
         array(
             'name'        => 'mopt_payone__acc_debitnote',
             'description' => 'PAYONE Lastschrift',
             'template'    => 'mopt_paymentmean_debit.tpl',
-//            'action'      => 'mopt_payment_payone_account',
             'position'    => 16,),
         array(
             'name'        => 'mopt_payone__acc_invoice',
             'description' => 'PAYONE Offene Rechnung',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_account',
             'position'    => 17,),
         array(
             'name'        => 'mopt_payone__acc_payinadvance',
             'description' => 'PAYONE Vorkasse',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_account',
             'position'    => 18,),
         array(
             'name'        => 'mopt_payone__acc_cashondel',
             'description' => 'PAYONE Nachnahme',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_account',
             'position'    => 19,),
         array(
             'name'        => 'mopt_payone__fin_billsafe',
             'description' => 'PAYONE BillSAFE',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_finance',
             'position'    => 20,),
         array(
             'name'        => 'mopt_payone__fin_commerzfin',
             'description' => 'PAYONE CommerzFinanz',
             'template'    => null,
-//            'action'      => 'mopt_payment_payone_finance',
             'position'    => 21,),
     );
     ;
@@ -620,11 +599,11 @@ class Mopt_PayoneHelper
 
   public function setPayonePrepaymentAsPayment($userId)
   {
-    $sql    = "SELECT id FROM s_core_paymentmeans WHERE name LIKE 'mopt_payone__acc_payinadvance'";
+    $sql       = "SELECT id FROM s_core_paymentmeans WHERE name LIKE 'mopt_payone__acc_payinadvance'";
     $paymentId = Shopware()->Db()->fetchOne($sql);
 
-      $sql = 'UPDATE s_user SET paymentID = ? WHERE id = ?';
-      Shopware()->Db()->query($sql, array($paymentId, $userId));
+    $sql = 'UPDATE s_user SET paymentID = ? WHERE id = ?';
+    Shopware()->Db()->query($sql, array($paymentId, $userId));
   }
 
   public function savePaymentData($userId, $paymentData)
@@ -922,6 +901,36 @@ class Mopt_PayoneHelper
     }
 
     return $userBillingAddressCheckData;
+  }
+
+  public function getPayoneAnswerFromOrderTxid($transactionId)
+  {
+    $data = array();
+
+    $builder = Shopware()->Models()->createQueryBuilder();
+    $builder->select(
+            'log.responseDetails as responseDetails'
+    )->from('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog', 'log');
+    $builder->where($builder->expr()->orx($builder->expr()->like('log.responseDetails', $builder->expr()->literal(
+                                    '%txid=' . $transactionId . '%'))));
+
+    $result = $builder->getQuery()->getArrayResult();
+
+    $dataResponse = explode('|', $result[0]['responseDetails']);
+    foreach ($dataResponse as $value)
+    {
+      $tmp    = explode('=', $value);
+      $data[$tmp[0]] = $tmp[1];
+    }
+
+    if ($data['status'] == 'APPROVED')
+    {
+      return $data;
+    }
+    else
+    {
+      return false;
+    }
   }
 
 }

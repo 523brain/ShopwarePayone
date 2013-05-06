@@ -70,16 +70,18 @@ class Mopt_PayoneParamBuilder
   public function buildOrderCapture($order, $postionIds, $finalize)
   {
     $params = array();
+    $payment     = $order->getPayment();
+    $paymentName = $payment->getName();
 
-    $params                   = array_merge($params, $this->getAuthParameters($order->getPayment()->getId()));
+    $params                   = array_merge($params, $this->getAuthParameters($payment->getId()));
     $params['txid']           = $order->getTransactionId();
     $params['sequencenumber'] = $this->getParamSequencenumber($order);
     $params['amount']         = $this->getParamCaptureAmount($order, $postionIds);
     $params['currency']       = $order->getCurrency();
 
     //create business object (used for settleaccount param)
-    $business    = new Payone_Api_Request_Parameter_Capture_Business();
-    $paymentName = $order->getPayment()->getName();
+    $business = new Payone_Api_Request_Parameter_Capture_Business();
+
     if ($paymentName === 'mopt_payone__acc_payinadvance' || preg_match('#mopt_payone__ibt#', $paymentName))
     {
       $business->setSettleaccount($finalize ? Payone_Api_Enum_Settleaccount::YES : Payone_Api_Enum_Settleaccount::NO);
@@ -88,6 +90,7 @@ class Mopt_PayoneParamBuilder
     {
       $business->setSettleaccount($finalize ? Payone_Api_Enum_Settleaccount::YES : Payone_Api_Enum_Settleaccount::AUTO);
     }
+
     $params['business'] = $business;
 
     return $params;
@@ -201,7 +204,7 @@ class Mopt_PayoneParamBuilder
 //    {
 //      $params['state']           = $this->getStateFromId($billingAddress['stateID']);
 //    }
-    $params['email']           = $userData['user']['email'];
+    $params['email']           = $userData['additional']['user']['email'];
     $params['telephonenumber'] = $billingAddress['phone'];
 //    $params['birthday']        = $billingAddress['birthday']; //@TODO check if date needs to be converted
     $params['language']        = strtolower($userData['additional']['country']['countryiso']);
@@ -413,18 +416,11 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @TODO fill all params
+   * collect all items
    */
   public function getInvoicing($basket)
   {
     $params = array();
-//    all params are not mandatory
-//    $params['invoiceid']               = '';
-//    $params['invoice_deliverymode']    = '';
-//    $params['invoice_deliverydate']    = '';
-//    $params['invoice_deliveryenddate'] = '';
-//    $params['invoiceappendix']         = '';
-
     $transaction = new Payone_Api_Request_Parameter_Invoicing_Transaction($params);
 
     foreach ($basket['content'] as $article)
@@ -432,11 +428,19 @@ class Mopt_PayoneParamBuilder
       $params = array();
 
       $params['id'] = $article['articleID']; //article number
-      $params['pr'] = $article['priceNumeric']; //price in cents
+      $params['pr'] = $article['priceNumeric']; //price
       $params['no'] = $article['quantity']; // ordered quantity
-      $params['de'] = $article['articlename']; // description check length
+      $params['de'] = substr($article['articlename'], 0, 100); // description
       $params['va'] = $article['tax_rate']; // vat
-      $params['it'] = Payone_Api_Enum_InvoicingItemType::GOODS;
+      $params['it'] = Payone_Api_Enum_InvoicingItemType::GOODS; //item type
+      if ($article['modus'] == 2)
+      {
+        $params['it'] = Payone_Api_Enum_InvoicingItemType::VOUCHER;
+      }
+      if ($article['modus'] == 4)
+      {
+        $params['it'] = Payone_Api_Enum_InvoicingItemType::HANDLING;
+      }
       $item         = new Payone_Api_Request_Parameter_Invoicing_Item($params);
       $transaction->addItem($item);
     }
@@ -445,7 +449,7 @@ class Mopt_PayoneParamBuilder
     $params = array();
 
     $params['id'] = 'Shipment'; //article number
-    $params['pr'] = $basket['sShippingcostsWithTax']; //price in cents
+    $params['pr'] = $basket['sShippingcostsWithTax']; //price
     $params['no'] = 1; // ordered quantity
     $params['de'] = 'Versandkosten'; // description check length
     $params['va'] = number_format($basket['sShippingcostsTax'], 0, '.', ''); // vat
@@ -453,6 +457,56 @@ class Mopt_PayoneParamBuilder
 
     $item = new Payone_Api_Request_Parameter_Invoicing_Item($params);
     $transaction->addItem($item);
+
+    return $transaction;
+  }
+
+  /**
+   * collect items from order
+   */
+  public function getInvoicingFromOrder($order, $positionIds, $finalize = 'skipCaptureMode')
+  {
+    $params = array();
+    $transaction = new Payone_Api_Request_Parameter_Capture_Invoicing_Transaction($params);
+
+
+    foreach ($order->getDetails() as $position)
+    {
+      if (!in_array($position->getId(), $positionIds))
+      {
+        continue;
+      }
+
+      $params = array();
+
+      $params['id'] = $position->getArticleId(); //article number
+      $params['pr'] = $position->getPrice() * $position->getQuantity(); //price
+      $params['no'] = $position->getQuantity(); // ordered quantity
+      $params['de'] = substr($position->getArticleName(), 0, 100); // description
+      $params['va'] = $position->getTaxRate(); // vat
+      $params['it'] = Payone_Api_Enum_InvoicingItemType::GOODS; //item type
+      $mode         = $position->getMode();
+      if ($mode == 2)
+      {
+        $params['it'] = Payone_Api_Enum_InvoicingItemType::VOUCHER;
+      }
+      if ($mode == 4)
+      {
+        $params['it'] = Payone_Api_Enum_InvoicingItemType::HANDLING;
+      }
+
+      if ($position->getArticleNumber() == 'SHIPPING')
+      {
+        $params['it'] = Payone_Api_Enum_InvoicingItemType::SHIPMENT;
+      }
+      $item         = new Payone_Api_Request_Parameter_Invoicing_Item($params);
+      $transaction->addItem($item);
+    }
+
+    if ($finalize !== 'skipCaptureMode')
+    {
+      $transaction->setCapturemode($finalize ? Payone_Api_Enum_CaptureMode::COMPLETED : Payone_Api_Enum_CaptureMode::NOTCOMPLETED);
+    }
 
     return $transaction;
   }

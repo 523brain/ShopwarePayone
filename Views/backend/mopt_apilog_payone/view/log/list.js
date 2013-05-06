@@ -172,19 +172,19 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
       '-',
       , {
         xtype: 'textfield',
-        name: 'search',
-        id: 'searchField',
+        name: 'searchApi',
+        id: 'searchFieldApi',
         dock: 'top',
         fieldLabel: 'Freitext'
       }, {
         xtype: 'button',
-        name: 'searchbtn',
+        name: 'searchbtnapi',
         text: 'Suchen',
-        id: 'searchBtn',
+        id: 'searchBtnApi',
         width: '50px',
         dock: 'top',
         handler: function(btn, event) {
-          var value = Ext.getCmp('searchField').getValue();
+          var value = Ext.getCmp('searchFieldApi').getValue();
           var stori = me.store;
 
           data = stori.load({
@@ -199,43 +199,14 @@ Ext.define('Shopware.apps.MoptApilogPayone.view.log.List', {
       },
       '-',
       {
-        xtype: 'textfield',
-        name: 'searchTransID',
-        id: 'searchFieldTransID',
-        dock: 'top',
-        fieldLabel: 'Transaction ID'
-      },
-      {
         xtype: 'button',
-        name: 'searchbtnTransID',
-        text: 'Suchen',
-        id: 'searchBtnTransID',
-        width: '50px',
-        dock: 'top',
-        handler: function(btn, event) {
-          var value = Ext.getCmp('searchFieldTransID').getValue();
-          var stori = me.store;
-
-          data = stori.load({
-            action: 'search',
-            pageSize: 20,
-            filters: [{
-                property: 'searchtrans',
-                value: value
-              }]
-          });
-        }
-      }, '-',
-      {
-        xtype: 'button',
-        name: 'resetTransBtn',
+        name: 'resetApiBtn',
         text: 'Suche zurücksetzen',
-        id: 'resetTransBtn',
+        id: 'resetApiBtn',
         dock: 'top',
         handler: function(btn, event) {
           var stori = me.store;
-          Ext.getCmp('searchFieldTransID').setValue('');
-          Ext.getCmp('searchField').setValue('');
+          Ext.getCmp('searchFieldApi').setValue('');
           data = stori.load({
             action: 'search',
             pageSize: 20,
