@@ -6,59 +6,23 @@
 Ext.define('Shopware.apps.MoptConfigPayone.model.Config', {
   extend: 'Ext.data.Model',
   fields: [
-    {
-      name: 'id',
-      type: 'int'
-    },
-    {
-      name: 'merchantId',
-      type: 'int'
-    },
-    {
-      name: 'portalId',
-      type: 'int'
-    },
-    {
-      name: 'subaccountId',
-      type: 'int'
-    },
-    {
-      name: 'apiKey',
-      type: 'string'
-    },
-    {
-      name: 'liveMode',
-      type: 'boolean'
-    },
-    {
-      name: 'authorisationMethod',
-      type: 'string'
-    },
-    {
-      name: 'submitBasket',
-      type: 'boolean'
-    },
-    {
-      name: 'adresscheckActive',
-      type: 'boolean'
-    },
-    {
-      name: 'adresscheckLiveMode', type: 'boolean'},
-    {
-      name: 'adresscheckBillingAdress', type: 'int'},
-    {
-      name: 'adresscheckShippingAdress', type: 'int'},
-    {
-      name: 'adresscheckAutomaticCorrection', type: 'int'},
-    {
-      name: 'adresscheckFailureHandling', type: 'int'},
-    {
-      name: 'adresscheckMinBasket', type: 'int'},
-    {
-      name: 'adresscheckMaxBasket',
-      type: 'int'},
-    {
-      name: 'adresscheckLifetime', type: 'int'},
+    { name: 'id', type: 'int' },
+    { name: 'merchantId', type: 'int' },
+    { name: 'portalId', type: 'int' },
+    { name: 'subaccountId', type: 'int' },
+    { name: 'apiKey', type: 'string' },
+    { name: 'liveMode', type: 'boolean' },
+    { name: 'authorisationMethod', type: 'string' },
+    { name: 'submitBasket', type: 'boolean' },
+    { name: 'adresscheckActive', type: 'boolean' },
+    { name: 'adresscheckLiveMode', type: 'boolean'},
+    { name: 'adresscheckBillingAdress', type: 'int'},
+    { name: 'adresscheckShippingAdress', type: 'int'},
+    { name: 'adresscheckAutomaticCorrection', type: 'int'},
+    { name: 'adresscheckFailureHandling', type: 'int'},
+    { name: 'adresscheckMinBasket', type: 'int'},
+    { name: 'adresscheckMaxBasket', type: 'int'},
+    { name: 'adresscheckLifetime', type: 'int'},
     { name: 'adresscheckFailureMessage', type: 'string' },
     { name: 'mapPersonCheck', type: 'int' },
     { name: 'mapKnowPreLastname', type: 'int' },
@@ -68,34 +32,20 @@ Ext.define('Shopware.apps.MoptConfigPayone.model.Config', {
     { name: 'mapUndeliverable', type: 'int' },
     { name: 'mapPersonDead', type: 'int' },
     { name: 'mapWrongAdress', type: 'int' },
-    {
-      name: 'consumerscoreActive', type: 'boolean'},
-    {
-      name: 'consumerscoreLiveMode', type: 'boolean'},
-    {
-      name: 'consumerscoreCheckMoment', type: 'int'},
-    {
-      name: 'consumerscoreCheckMode', type: 'string'},
-    {
-      name: 'consumerscoreDefault', type: 'int'},
-    {
-      name: 'consumerscoreLifetime', type: 'int'},
-    {
-      name: 'consumerscoreMinBasket', type: 'int'},
-    {
-      name: 'consumerscoreMaxBasket', type: 'int'},
-    {
-      name: 'consumerscoreFailureHandling', type: 'int'},
-    {
-      name: 'consumerscoreNoteMessage', type: 'string'},
-    {
-      name: 'consumerscoreNoteActive', type: 'boolean'},
-    {
-      name: 'consumerscoreAgreementMessage', type: 'string'},
-    {
-      name: 'consumerscoreAgreementActive', type: 'boolean'},
-    {
-      name: 'consumerscoreAbtestValue', type: 'int'},
+    { name: 'consumerscoreActive', type: 'boolean' },
+    { name: 'consumerscoreLiveMode', type: 'boolean'},
+    { name: 'consumerscoreCheckMoment', type: 'int'},
+    { name: 'consumerscoreCheckMode', type: 'string'},
+    { name: 'consumerscoreDefault', type: 'int'},
+    { name: 'consumerscoreLifetime', type: 'int'},
+    { name: 'consumerscoreMinBasket', type: 'int'},
+    { name: 'consumerscoreMaxBasket', type: 'int'},
+    { name: 'consumerscoreFailureHandling', type: 'int'},
+    { name: 'consumerscoreNoteMessage', type: 'string'},
+    { name: 'consumerscoreNoteActive', type: 'boolean'},
+    { name: 'consumerscoreAgreementMessage', type: 'string'},
+    { name: 'consumerscoreAgreementActive', type: 'boolean'},
+    { name: 'consumerscoreAbtestValue', type: 'int' },
     { name: 'consumerscoreAbtestActive', type: 'boolean'},
     { name: 'stateAppointed', type: 'int'},
     { name: 'stateCapture', type: 'int'},
@@ -124,6 +74,12 @@ Ext.define('Shopware.apps.MoptConfigPayone.model.Config', {
     { name: 'transVsettlement', type: 'string'},
     { name: 'transTransfer', type: 'string'},
     { name: 'transInvoice', type: 'string'},
+  ],
+  /**
+   * Validation
+   */
+  validations: [
+    
   ],
   /**
    * Auch Models können über eigene Proxies verfügen. Dadurch

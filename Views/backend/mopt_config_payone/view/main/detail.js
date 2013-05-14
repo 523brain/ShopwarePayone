@@ -68,7 +68,12 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
             //            url: '',
             success: function(form, action) {
               Ext.Msg.alert('Success', action.result.data);
-            }
+            },
+            failure: function() {
+              Ext.Msg.alert('Error', 'Die Daten wurden nicht zurückgesetzt.');
+            },
+            waitTitle: 'Bitte warten...',
+            waitMsg: 'Daten werden verarbeitet'
           });
         }
       },
@@ -85,7 +90,12 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
             //            url: '',
             success: function(form, action) {
               Ext.Msg.alert('Success', action.result.data);
-            }
+            },
+            failure: function() {
+              Ext.Msg.alert('Error', 'Die Daten konnten nicht gespeichert werden. Bitte überprüfen Sie ihre Eingaben.');
+            },
+            waitTitle: 'Bitte warten...',
+            waitMsg: 'Daten werden verarbeitet'
           });
         }
 //      }]
@@ -187,7 +197,9 @@ Ext.define('Shopware.apps.MoptConfigPayone.view.main.Detail', {
         xtype: 'label',
         text: 'Mehrere URLs können duch ; getrennt angegeben werden.',
         margin: '0 0 10 0',
-        style: { display: 'block !important' }
+        style: {
+          display: 'block !important'
+        }
       },
       {
         xtype: 'textfield',

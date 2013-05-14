@@ -52,9 +52,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function uninstall()
   {
-    $em   = $this->Application()->Models();
-    $tool = new \Doctrine\ORM\Tools\SchemaTool($em);
-//     
+    $em       = $this->Application()->Models();
+    $platform = $em->getConnection()->getDatabasePlatform();
+    $platform->registerDoctrineTypeMapping('enum', 'string');
+    $tool     = new \Doctrine\ORM\Tools\SchemaTool($em);
+
 //     $classes = array(
 //     $em->getClassMetadata('Shopware\CustomModels\MoptPayoneTransactionLog\MoptPayoneTransactionLog'),
 //     );
@@ -64,9 +66,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 //     $em->getClassMetadata('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'),
 //     );
 //     $tool->dropSchema($classes);
-//     
 //    $classes = array(
-//        $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig'),
+//        $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig')
 //    );
 //    $tool->dropSchema($classes);
 
@@ -81,7 +82,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     switch ($oldVersion)
     {
       case '1.0.0' :
-// Things to do to update a version 1.0.0 to the current version
+        // Things to do to update a version 1.0.0 to the current version
         break;
     }
   }
@@ -125,7 +126,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         'author'      => 'derksen mediaopt GmbH',
         'label'       => $this->getLabel(),
         'description' => '<p><img src="data:image/png;base64,' . $img . '" /></p> <p style="font-size:12px; font-weight: bold;">Pay save and secured through our payment service. For more information visit <a href="http://www.mediaopt.de">Mediaopt</a></p>',
-        'copyright'   => 'Copyright © 2012, mediaopt',
+        'copyright'   => 'Copyright Â© 2012, mediaopt',
         'support'     => 'shopware@mediaopt.de',
         'link'        => 'http://www.mediaopt.de/'
     );
@@ -215,6 +216,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 // hook for saving consumerscorecheck result
     $this->subscribeEvent(
             'sAdmin::sUpdatePayment::after', 'onUpdatePayment'
+    );
+
+// hook for getting dispatch basket, used to calculate correct shipment costs for credit card payments
+    $this->subscribeEvent(
+            'sAdmin::sGetDispatchBasket::after', 'onGetDispatchBasket'
     );
 
 // load payment data from db to use for payment
@@ -556,9 +562,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
   public function onGetSelectedPayment(Enlight_Hook_HookArgs $arguments)
   {
-    $ret     = $arguments->getReturn();
-    $subject = $arguments->getSubject();
-    $userId  = Shopware()->Session()->sUserId;
+    $ret    = $arguments->getReturn();
+    $userId = Shopware()->Session()->sUserId;
 
     $sql         = 'SELECT `moptPaymentData` FROM s_plugin_mopt_payone_payment_data WHERE userId = ?';
     $paymentData = unserialize(Shopware()->Db()->fetchOne($sql, $userId));
@@ -898,12 +903,16 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         return;
       }
 
+      if (isset($_POST['sSelectAddress']))
+      {
+        return;
+      }
+
       $session          = Shopware()->Session();
       $userId           = $session->sUserId;
       $post             = $_POST["register"];
       $shippingFormData = $post['shipping'];
-      $personalFormData = $post['personal'];
-      $params           = $moptPayoneMain->getParamBuilder()->getAddressCheckParams($shippingFormData, $personalFormData);
+      $params           = $moptPayoneMain->getParamBuilder()->getAddressCheckParams($shippingFormData, $shippingFormData);
       $response         = $this->performAddressCheck($config, $params, $this->Application()->PayoneBuilder(), $moptPayoneMain, $shippingAddressChecktype);
 
       //@TODO handle ERROR, VALID, INVALID and move to feedbackhandler
@@ -924,10 +933,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             case 0: //auto correction
               {
                 $session->moptPayoneShippingAddresscheckResult = serialize($response);
-                Shopware()->Modules()->Admin()->sSYSTEM->_POST['register']['shipping']['street'] = $response->getStreetname();
-                Shopware()->Modules()->Admin()->sSYSTEM->_POST['register']['shipping']['streetnumber'] = $response->getStreetnumber();
-                Shopware()->Modules()->Admin()->sSYSTEM->_POST['register']['shipping']['zipcode'] = $response->getZip();
-                Shopware()->Modules()->Admin()->sSYSTEM->_POST['register']['shipping']['city'] = $response->getCity();
+                Shopware()->Modules()->Admin()->sSYSTEM->_POST['street'] = $response->getStreetname();
+                Shopware()->Modules()->Admin()->sSYSTEM->_POST['streetnumber'] = $response->getStreetnumber();
+                Shopware()->Modules()->Admin()->sSYSTEM->_POST['zipcode'] = $response->getZip();
+                Shopware()->Modules()->Admin()->sSYSTEM->_POST['city'] = $response->getCity();
               }
               break;
             case 1: // no correction
@@ -953,10 +962,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       if ($response->getStatus() == 'INVALID' || $response->getStatus() == 'ERROR')
       {
         $returnValues['sErrorFlag']['mopt_payone_addresscheck']     = true;
-        $returnValues['sErrorMessages']['mopt_payone_addresscheck'] = utf8_encode($response->getCustomermessage());
+        $returnValues['sErrorMessages']['mopt_payone_addresscheck'] = $response->getCustomermessage();
 
-
-//        $moptPayoneMain->getHelper()->saveShippingAddressError($userId, $response);
         $request = $this->Application()->Front()->Request(); // used to forward user
         $session->moptPayoneShippingAddresscheckResult = serialize($response);
 
@@ -965,28 +972,32 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
           case 0: //cancel transaction -> redirect to payment choice
             {
               $arguments->setReturn($returnValues);
-              $this->forward($request, 'index', 'register', null, array('sTarget' => 'checkout'));
+              $this->forward($request, 'index', 'account', null, array('sTarget' => 'checkout'));
               return;
             }
             break;
           case 1: // reenter address -> redirect to address form
             {
               $arguments->setReturn($returnValues);
-              $this->forward($request, 'index', 'register', null, array('sTarget' => 'checkout'));
+              $this->forward($request, 'index', 'account', null, array('sTarget' => 'checkout'));
               return;
             }
             break;
           case 2: // perform consumerscore check
             {
-              $params   = $moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($shippingAddressData);
-              $response = $this->performConsumerScoreCheck($config, $params, $this->Application()->PayoneBuilder());
+              $shippingFormData['countryID'] = $shippingFormData['country'];
+              $params                        = $moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($shippingFormData);
+              $response                      = $this->performConsumerScoreCheck($config, $params, $this->Application()->PayoneBuilder());
               if (!$this->handleConsumerScoreCheckResult($response, $config, $userId))
               {
                 //cancel transaction
                 $arguments->setReturn($returnValues);
-                $this->forward($request, 'index', 'register', null, array('sTarget' => 'checkout'));
+                $this->forward($request, 'index', 'account', null, array('sTarget' => 'checkout'));
                 return;
               }
+              unset($returnValues['sErrorFlag']['mopt_payone_addresscheck']);
+              unset($returnValues['sErrorMessages']['mopt_payone_addresscheck']);
+              return;
             }
             break;
           case 3: // proceed
@@ -1121,7 +1132,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
           if ($response->getStatus() == 'BLOCKED')
           {
             $returnValues['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
-            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht möglich.';
+            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht mÃ¶glich.';
             Shopware()->Session()->moptPayment = $post;
             $arguments->setReturn($returnValues);
             return;
@@ -1167,6 +1178,27 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $mopt_payone__main->getHelper()->saveConsumerScoreCheckResult($userId, $result);
 
     unset($session->moptPayoneConsumerscorecheckResult);
+  }
+
+  /**
+   * special handling for grouped credit cards to calculate correct shipment costs
+   * 
+   * @param Enlight_Hook_HookArgs $arguments 
+   */
+  public function onGetDispatchBasket(Enlight_Hook_HookArgs $arguments)
+  {
+    $returnValues = $arguments->getReturn();
+
+    $user = $arguments->getSubject()->sGetUserData();
+
+    if (empty($user['additional']['payment']['id']))
+    {
+      return;
+    }
+
+    $returnValues['paymentID'] = $user['additional']['payment']['id'];
+
+    $arguments->setReturn($returnValues);
   }
 
   protected function performAddressCheck($config, $params, $payoneServiceBuilder, $mopt_payone__main, $billingAddressChecktype)
@@ -1328,6 +1360,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
               $session->moptShippingAddressCheckNeedsUserVerification = true;
               $session->moptShippingAddressCheckOriginalAddress = $shippingFormData;
               $session->moptShippingAddressCheckCorrectedAddress = serialize($response);
+              $subject->forward('confirm', 'checkout', null, array('moptShippingAddressCheckNeedsUserVerification' => true, 'moptShippingAddressCheckOriginalAddress'       => $shippingFormData, 'moptShippingAddressCheckCorrectedAddress'      => serialize($response), 'moptShippingAddressCheckTarget'                => 'checkout'));
             }
             break;
         }
@@ -1452,6 +1485,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   protected function createDatabase()
   {
     $em         = $this->Application()->Models();
+    $platform   = $em->getConnection()->getDatabasePlatform();
+    $platform->registerDoctrineTypeMapping('enum', 'string');
     $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
 
     $classes = array(
@@ -1499,73 +1534,73 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $sql = "INSERT INTO `s_core_documents_box` (`documentID`, `name`, `style`, `value`) VALUES
 	(1, 'PAYONE_Footer', 'width: 170mm;\r\nposition:fixed;\r\nbottom:-20mm;\r\nheight: 15mm;', ?),
 	(1, 'PAYONE_Content_Info', ?, ?);";
-            Shopware()->Db()->query($sql, array(
-            '<table style="height: 90px;" border="0" width="100%">'
-                . '<tbody>'
-                . '<tr valign="top">'
-                . '<td style="width: 33%;">'
-                . '<p><span style="font-size: xx-small;">Demo GmbH</span></p>'
-                . '<p><span style="font-size: xx-small;">Steuer-Nr <br />UST-ID: <br />Finanzamt </span><span style="font-size: xx-small;">Musterstadt</span></p>'
-                . '</td>'
-                . '<td style="width: 33%;">'
-                . '<p><span style="font-size: xx-small;">AGB<br /></span></p>'
-                . '<p><span style="font-size: xx-small;">Gerichtsstand ist Musterstadt<br />Erf&uuml;llungsort Musterstadt</span></p>'
-                . '</td>'
-                . '<td style="width: 33%;">'
-                . '<p><span style="font-size: xx-small;">Gesch&auml;ftsf&uuml;hrer</span></p>'
-                . '<p><span style="font-size: xx-small;">Max Mustermann</span></p>'
-                . '</td>'
-                . '</tr>'
-                . '</tbody>'
-                . '</table>',
-            '.payment_instruction, .payment_instruction td, .payment_instruction tr {'
-                . '	margin: 0;'
-                . '	padding: 0;'
-                . '	border: 0;'
-                . '	font-size:8px;'
-                . '	font: inherit;'
-                . '	vertical-align: baseline;'
-                . '}'
-                . '.payment_note {'
-                . '	font-size: 10px;'
-                . '	color: #333;'
-                . '}',
-            '<div class="payment_note">'
-                . '<br/>'
-                . '{$instruction.legalNote}<br/>'
-                . '{$instruction.note}<br/><br/>'
-                . '</div>'
-                . '<table class="payment_instruction">'
-                . '<tr>'
-                . '	<td>Empfänger:</td>'
-                . '	<td>{$instruction.recipient}</td>'
-                . '</tr>'
-                . '<tr>'
-                . '	<td>Kontonr.:</td>'
-                . '	<td>{$instruction.accountNumber}</td>'
-                . '</tr>'
-                . '<tr>'
-                . '	<td>BLZ:</td>'
-                . '	<td>{$instruction.bankCode}</td>'
-                . '</tr>'
-                . '<tr>'
-                . '	<td>Bank:</td>'
-                . '	<td>{$instruction.bankName}</td>'
-                . '</tr>'
-                . '<tr>'
-                . '	<td>Betrag:</td>'
-                . '	<td>{$instruction.amount|currency}</td>'
-                . '</tr>'
-                . '<tr>'
-                . '	<td>Verwendungszweck 1:</td>'
-                . '	<td>{$instruction.reference}</td>'
-                . '</tr>'
-                . '<tr>'
-                . '	<td>Verwendungszweck 2:</td>'
-                . '	<td>{config name=host}</td>'
-                . '</tr>'
-                . '</table>'
-        ));
+    Shopware()->Db()->query($sql, array(
+        '<table style="height: 90px;" border="0" width="100%">'
+        . '<tbody>'
+        . '<tr valign="top">'
+        . '<td style="width: 33%;">'
+        . '<p><span style="font-size: xx-small;">Demo GmbH</span></p>'
+        . '<p><span style="font-size: xx-small;">Steuer-Nr <br />UST-ID: <br />Finanzamt </span><span style="font-size: xx-small;">Musterstadt</span></p>'
+        . '</td>'
+        . '<td style="width: 33%;">'
+        . '<p><span style="font-size: xx-small;">AGB<br /></span></p>'
+        . '<p><span style="font-size: xx-small;">Gerichtsstand ist Musterstadt<br />Erf&uuml;llungsort Musterstadt</span></p>'
+        . '</td>'
+        . '<td style="width: 33%;">'
+        . '<p><span style="font-size: xx-small;">Gesch&auml;ftsf&uuml;hrer</span></p>'
+        . '<p><span style="font-size: xx-small;">Max Mustermann</span></p>'
+        . '</td>'
+        . '</tr>'
+        . '</tbody>'
+        . '</table>',
+        '.payment_instruction, .payment_instruction td, .payment_instruction tr {'
+        . '	margin: 0;'
+        . '	padding: 0;'
+        . '	border: 0;'
+        . '	font-size:8px;'
+        . '	font: inherit;'
+        . '	vertical-align: baseline;'
+        . '}'
+        . '.payment_note {'
+        . '	font-size: 10px;'
+        . '	color: #333;'
+        . '}',
+        '<div class="payment_note">'
+        . '<br/>'
+        . '{$instruction.legalNote}<br/>'
+        . '{$instruction.note}<br/><br/>'
+        . '</div>'
+        . '<table class="payment_instruction">'
+        . '<tr>'
+        . '	<td>EmpfÃ¤nger:</td>'
+        . '	<td>{$instruction.recipient}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>Kontonr.:</td>'
+        . '	<td>{$instruction.accountNumber}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>BLZ:</td>'
+        . '	<td>{$instruction.bankCode}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>Bank:</td>'
+        . '	<td>{$instruction.bankName}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>Betrag:</td>'
+        . '	<td>{$instruction.amount|currency}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>Verwendungszweck 1:</td>'
+        . '	<td>{$instruction.reference}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>Verwendungszweck 2:</td>'
+        . '	<td>{config name=host}</td>'
+        . '</tr>'
+        . '</table>'
+    ));
   }
 
   protected function addAttributes()
@@ -1595,6 +1630,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'sequencenumber', 'int(11)', true, null);
     Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'is_authorized', 'TINYINT(1)', true, null);
     Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'is_finally_captured', 'TINYINT(1)', true, null); //settlement for some payment-types
+    Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'clearing_data', 'text', true, null); //clearing data for some payment-types
     // orderdetails(order articles) extension
     Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'payment_status', 'VARCHAR(100)', true, null);
     Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'shipment_date', 'date', true, null);
@@ -1637,7 +1673,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         'parent'     => $parent,
     ));
     $this->createMenuItem(array(
-        'label'      => 'API-log',
+        'label'      => 'API-Log',
         'controller' => 'MoptApilogPayone',
         'action'     => 'Index',
         'class'      => 'sprite-cards-stack',
@@ -1774,6 +1810,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         $view->assign('moptAddressCheckNeedsUserVerification', $session->moptAddressCheckNeedsUserVerification);
         $view->extendsTemplate('frontend/account/mopt_billing.tpl');
       }
+      if ($session->moptShippingAddressCheckNeedsUserVerification)
+      {
+        $view->assign('moptShippingAddressCheckNeedsUserVerification', $session->moptShippingAddressCheckNeedsUserVerification);
+        $view->extendsTemplate('frontend/account/mopt_shipping.tpl');
+      }
     }
 
     if ($request->getControllerName() == 'account' && $request->getActionName() == 'payment')
@@ -1792,6 +1833,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         $view->assign('moptAddressCheckNeedsUserVerification', $session->moptAddressCheckNeedsUserVerification);
         $view->extendsTemplate('frontend/checkout/mopt_confirm.tpl');
       }
+      if ($session->moptShippingAddressCheckNeedsUserVerification)
+      {
+        $view->assign('moptShippingAddressCheckNeedsUserVerification', $session->moptShippingAddressCheckNeedsUserVerification);
+        $view->extendsTemplate('frontend/checkout/mopt_shipping_confirm.tpl');
+      }
       $request = $args->getSubject()->Request();
 
       if ($request->getParam('moptAddressCheckNeedsUserVerification'))
@@ -1801,6 +1847,15 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         $session->moptAddressCheckCorrectedAddress = $request->getParam('moptAddressCheckCorrectedAddress');
         $session->moptAddressCheckTarget = $request->getParam('moptAddressCheckTarget');
         $view->extendsTemplate('frontend/checkout/mopt_confirm.tpl');
+      }
+
+      if ($request->getParam('moptShippingAddressCheckNeedsUserVerification'))
+      {
+        $view->assign('moptShippingAddressCheckNeedsUserVerification', $request->getParam('moptShippingAddressCheckNeedsUserVerification'));
+        $session->moptShippingAddressCheckOriginalAddress = $request->getParam('moptShippingAddressCheckOriginalAddress');
+        $session->moptShippingAddressCheckCorrectedAddress = $request->getParam('moptShippingAddressCheckCorrectedAddress');
+        $session->moptShippingAddressCheckTarget = $request->getParam('moptShippingAddressCheckTarget');
+        $view->extendsTemplate('frontend/checkout/mopt_shipping_confirm.tpl');
       }
 
       if ($session->moptConsumerScoreCheckNeedsUserAgreement)
@@ -1957,8 +2012,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     // get PAYONE data from log
     $moptPayoneMain = $this->Application()->PayoneMain();
-    $payoneData     = $moptPayoneMain->getHelper()->getPayoneAnswerFromOrderTxid($document->_order->order->transactionID);
-    
+    $payoneData     = $moptPayoneMain->getHelper()->getClearingDataFromOrderTxid($document->_order->order->transactionID);
+
     if (!$payoneData)
     {
       return;
@@ -1975,8 +2030,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $document->_template->addTemplateDir(dirname(__FILE__) . '/Views/');
     $document->_template->assign('instruction', (array) $paymentInstruction);
-    $containerData           = $view->getTemplateVars('Containers');
-    $containerData['Footer'] = $containerData['PAYONE_Footer'];
+    $containerData                          = $view->getTemplateVars('Containers');
+    $containerData['Footer']                = $containerData['PAYONE_Footer'];
     $containerData['Content_Info']          = $containerData['PAYONE_Content_Info'];
     $containerData['Content_Info']['value'] = $document->_template->fetch('string:' . $containerData['Content_Info']['value']);
     $containerData['Content_Info']['style'] = '}' . $containerData['Content_Info']['style'] . ' #info {';

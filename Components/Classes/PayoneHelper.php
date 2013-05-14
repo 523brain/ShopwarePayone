@@ -497,11 +497,9 @@ class Mopt_PayoneHelper
     $shippingId = Shopware()->Db()->fetchOne($sql, $userId);
 
     $sql = 'UPDATE `s_user_shippingaddress_attributes`' .
-            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_result=? WHERE shippingID =?';
+            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_personstatus=?, mopt_payone_addresscheck_result=?, mopt_payone_consumerscore_color=? WHERE shippingID =?';
 
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getPersonstatus(), $shippingId));
-    //@TODO handle personstatus
-    //@TODO set scoring value    
+    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getPersonstatus(), $response->getStatus(), $mappedPersonStatus, $shippingId));
   }
 
   public function saveBillingAddressError($userId, $response)
@@ -812,6 +810,12 @@ class Mopt_PayoneHelper
 
   public function extractShippingCostAsOrderPosition($order)
   {
+    //leave if no shipment costs are set
+    if($order->getInvoiceShipping() == 0)
+    {
+      return;
+    }
+    
     $dispatch = $order->getDispatch();
     if (strpos($order->getPayment()->getName(), 'mopt_payone__') !== 0)
     {
@@ -903,7 +907,7 @@ class Mopt_PayoneHelper
     return $userBillingAddressCheckData;
   }
 
-  public function getPayoneAnswerFromOrderTxid($transactionId)
+  public function getClearingDataFromOrderTxid($transactionId)
   {
     $data = array();
 
@@ -919,7 +923,7 @@ class Mopt_PayoneHelper
     $dataResponse = explode('|', $result[0]['responseDetails']);
     foreach ($dataResponse as $value)
     {
-      $tmp    = explode('=', $value);
+      $tmp           = explode('=', $value);
       $data[$tmp[0]] = $tmp[1];
     }
 
@@ -931,6 +935,26 @@ class Mopt_PayoneHelper
     {
       return false;
     }
+  }
+
+  public function extractClearingDataFromResponse($response)
+  {
+    $responseData = $response->toArray();
+
+    foreach ($responseData as $key => $value)
+    {
+      if (strpos($key, 'clearing_') === false)
+      {
+        unset($responseData[$key]);
+      }
+    }
+
+    if (empty($responseData))
+    {
+      return false;
+    }
+
+    return $responseData;
   }
 
 }

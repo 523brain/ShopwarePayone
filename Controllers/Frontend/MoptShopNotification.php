@@ -7,8 +7,8 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
 {
 
   protected $moptPayone__serviceBuilder = null;
-  protected $moptPayone__main = null;
-  protected $moptPayone__helper = null;
+  protected $moptPayone__main           = null;
+  protected $moptPayone__helper         = null;
 
   /**
    *  Quote: "Der SessionStatus wird von folgenden IP-Adressen aus verschickt: 213.178.72.196 bzw. 213.178.72.197 sowie 217.70.200.0/24."
@@ -18,8 +18,8 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
   public function init()
   {
     $this->moptPayone__serviceBuilder = $this->Plugin()->Application()->PayoneBuilder();
-    $this->moptPayone__main           = $this->Plugin()->Application()->PayoneMain();
-    $this->moptPayone__helper         = $this->moptPayone__main->getHelper();
+    $this->moptPayone__main = $this->Plugin()->Application()->PayoneMain();
+    $this->moptPayone__helper = $this->moptPayone__main->getHelper();
   }
 
   public function indexAction()
@@ -29,7 +29,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     // 404 if no POST request
     if (!$request->isPost())
     {
-      $this->redirect(array('controller' => 'index', 'action' => 'error'));
+      $this->redirect(array('controller' => 'index', 'action'     => 'error'));
       return;
     }
 
@@ -45,43 +45,56 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
 
     if (!$order)
     {
-      echo 'Order not found. ' . $transactionId; exit;
+      echo 'Order not found. ' . $transactionId;
+      exit;
     }
 
     //get paymentid from referenced order
     $paymentId = $order->getPayment()->getId();
     Shopware()->Config()->mopt_payone__paymentId = $paymentId; //store in config for log
-    
     //get key from config
-    $config = $this->moptPayone__main->getPayoneConfig($paymentId, true);
-    $key = $config['apiKey'];
-    
+    $config    = $this->moptPayone__main->getPayoneConfig($paymentId, true);
+    $key       = $config['apiKey'];
+
     //@todo: get valid ips from config ?!
     //IP-validator commented out in Components/Payone/Config.php
     $validIps = array();
-    
+
     $service = $this->moptPayoneInitTransactionService($key, $validIps);
 
-    $response = $service->handleByPost();
+    $response      = $service->handleByPost();
     $payoneRequest = $service->getMapper()->mapByArray($_POST);
 
-    if($response->getStatus() == $response::STATUS_OK)
+    if ($response->getStatus() == $response::STATUS_OK)
     {
       $attributeData = $this->moptPayone__helper->getOrCreateAttribute($order);
       $attributeData->setMoptPayoneStatus($request->getParam('txaction'));
+      //@TODO set sequencenumber from request
+
+      $clearingData  = $this->moptPayone__helper->extractClearingDataFromResponse($payoneRequest);
+      if ($clearingData)
+      {
+        $clearingData = http_build_query($clearingData);
+        $attributeData->setMoptPayoneClearingData($clearingData);
+      }
+
       Shopware()->Models()->persist($attributeData);
       Shopware()->Models()->flush();
-      
+
       $this->moptPayone__helper->mapTransactionStatus($order, $config, $request->getParam('txaction'));
-      
+    }
+
+    echo $response->getStatus();
+
+    if ($response->getStatus() == $response::STATUS_OK)
+    {
       // forward status to configured urls
       $this->moptPayoneForwardTransactionStatus($config, $payoneRequest, $request->getParam('txaction'));
     }
-    
-    echo $response->getStatus();
+
     exit;
   }
-  
+
   protected function moptPayoneInitTransactionService($key, $validIps)
   {
     $key     = md5($key);
@@ -92,7 +105,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
 
     return $service;
   }
-  
+
   protected function moptPayoneForwardTransactionStatus($payoneConfig, $request, $payoneStatus)
   {
     //check if urls are configured for this status
@@ -106,6 +119,10 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
       //send transaction to each url
       foreach ($forwardingUrls as $url)
       {
+        if(empty($url))
+        {
+          continue;
+        }
         // new HTTP request to some HTTP address
         $client = new Zend_Http_Client($url);
         // set Timeout
@@ -125,9 +142,9 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     }
   }
 
-  
   public function Plugin()
   {
     return Shopware()->Plugins()->Frontend()->MoptPaymentPayone();
   }
+
 }

@@ -512,57 +512,60 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @param type $billingFormData
+   * @param type $addressFormData
    * @param type $personalFormData
    * @return type 
    */
-  public function getAddressCheckParams($billingFormData, $personalFormData, $paymentId = 0)
+  public function getAddressCheckParams($addressFormData, $personalFormData, $paymentId = 0)
   {
     $params = array();
     $params = $this->getAuthParameters($paymentId);
 
-    $params['firstname']       = $personalFormData['firstname'];
-    $params['lastname']        = $personalFormData['lastname'];
-    $params['company']         = $billingFormData['company'];
-    $params['street']          = $billingFormData['street'] . ' ' . $billingFormData['streetnumber'];
-    $params['streetname']      = $billingFormData['street'];
-    $params['streetnumber']    = $billingFormData['streetnumber'];
-    $params['zip']             = $billingFormData['zipcode'];
-    $params['city']            = $billingFormData['city'];
+    $params['firstname']    = $personalFormData['firstname'];
+    $params['lastname']     = $personalFormData['lastname'];
+    $params['company']      = $addressFormData['company'];
+    $params['street']       = $addressFormData['street'] . ' ' . $addressFormData['streetnumber'];
+    $params['streetname']   = $addressFormData['street'];
+    $params['streetnumber'] = $addressFormData['streetnumber'];
+    $params['zip']          = $addressFormData['zipcode'];
+    $params['city']         = $addressFormData['city'];
 //    if (!empty($billingFormData['state'])) //@TODO check if correct key, only for US and Canada
 //    {
 //      $params['state']           = $this->getStateFromId($billingFormData['state']);
 //    }
-    $params['country']         = $this->getCountryFromId($billingFormData['country']);
-    $params['telephonenumber'] = $personalFormData['phone'];
-    $params['language']        = $this->getLanguageFromCountryId($billingFormData['country']);
+    $params['country']      = $this->getCountryFromId($addressFormData['country']);
+    if (isset($personalFormData['phone']))
+    {
+      $params['telephonenumber'] = $personalFormData['phone'];
+    }
+    $params['language']        = $this->getLanguageFromCountryId($addressFormData['country']);
 
     return $params;
   }
 
   /**
-   * @param type $billingFormData
+   * @param type $userFormData
    * @return type 
    */
-  public function getConsumerscoreCheckParams($billingFormData, $paymentId = 0)
+  public function getConsumerscoreCheckParams($userFormData, $paymentId = 0)
   {
     $params = $this->getAuthParameters($paymentId);
 
-    $params['firstname']    = $billingFormData['firstname'];
-    $params['lastname']     = $billingFormData['lastname'];
-    $params['company']      = $billingFormData['company'];
-    $params['street']       = $billingFormData['street'] . ' ' . $billingFormData['streetnumber'];
-    $params['streetname']   = $billingFormData['street'];
-    $params['streetnumber'] = $billingFormData['streetnumber'];
-    $params['zip']          = $billingFormData['zipcode'];
-    $params['city']         = $billingFormData['city'];
+    $params['firstname']    = $userFormData['firstname'];
+    $params['lastname']     = $userFormData['lastname'];
+    $params['company']      = $userFormData['company'];
+    $params['street']       = $userFormData['street'] . ' ' . $userFormData['streetnumber'];
+    $params['streetname']   = $userFormData['street'];
+    $params['streetnumber'] = $userFormData['streetnumber'];
+    $params['zip']          = $userFormData['zipcode'];
+    $params['city']         = $userFormData['city'];
 //    if (!empty($billingFormData['state'])) //@TODO check if correct key
 //    {
 //      $params['state']           = $this->getStateFromId($billingFormData['state']);
 //    }
-    $params['country']      = $this->getCountryFromId($billingFormData['countryID']);
+    $params['country']      = $this->getCountryFromId($userFormData['countryID']);
 //    $params['telephonenumber'] = $personalFormData['phone'];
-    $params['language']     = $this->getLanguageFromCountryId($billingFormData['countryID']);
+    $params['language']     = $this->getLanguageFromCountryId($userFormData['countryID']);
 
     return $params;
   }

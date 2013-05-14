@@ -120,6 +120,13 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
         //mark / fill positions as captured
         $this->moptPayoneMarkPositionsAsCaptured($order, $positionIds);
 
+        //extract and save clearing data
+        $clearingData = $this->moptPayone__helper->extractClearingDataFromResponse($response);
+        if ($clearingData)
+        {
+          $this->moptPayoneSaveClearingData($order, $clearingData);
+        }
+
         $response = array('success' => true);
       }
       else
@@ -256,6 +263,16 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       Shopware()->Models()->persist($attribute);
       Shopware()->Models()->flush();
     }
+  }
+
+  protected function moptPayoneSaveClearingData($order, $clearingData)
+  {
+    $attribute    = $this->moptPayone__helper->getOrCreateAttribute($order);
+    $clearingData = http_build_query($clearingData);
+    $attribute->setMoptPayoneClearingData($clearingData);
+
+    Shopware()->Models()->persist($attribute);
+    Shopware()->Models()->flush();
   }
 
 }

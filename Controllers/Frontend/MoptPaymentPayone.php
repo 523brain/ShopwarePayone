@@ -110,7 +110,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   public function creditcardAction()
   {
     $response = $this->mopt_payone__creditcard();
-    if ($response->getStatus() == "REDIRECT")
+    if ($response->isRedirect())
     {
       $this->mopt_payone__handleRedirectFeedback($response);
     }
@@ -364,16 +364,23 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
    */
   protected function mopt_payone_saveOrder($txId, $hash)
   {
-    $orderNr = $this->saveOrder($txId, $hash);
-    $session = Shopware()->Session();
+    $orderNr      = $this->saveOrder($txId, $hash);
+    $session      = Shopware()->Session();
+    $clearingData = null;
+
+    if ($session->moptClearingData)
+    {
+      $clearingData = http_build_query($session->moptClearingData);
+      unset($session->moptClearingData);
+    }
 
     //get order id
     $sql     = 'SELECT `id` FROM `s_order` WHERE ordernumber = ?';
     $orderId = Shopware()->Db()->fetchOne($sql, $orderNr);
 
     $sql = 'UPDATE `s_order_attributes`' .
-            'SET mopt_payone_txid=?, mopt_payone_is_authorized=? WHERE orderID = ?';
-    Shopware()->Db()->query($sql, array($txId, $session->moptIsAuthorized, $orderId));
+            'SET mopt_payone_txid=?, mopt_payone_is_authorized=?, mopt_payone_clearing_data=? WHERE orderID = ?';
+    Shopware()->Db()->query($sql, array($txId, $session->moptIsAuthorized, $clearingData, $orderId));
     unset($session->moptIsAuthorized);
 
     return $this->forward('finish', 'checkout', null, array('sAGB'      => 1, 'sUniqueID' => $hash));
@@ -396,6 +403,14 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     }
     else
     {
+      //extract possible clearing data
+      $clearingData = $this->moptPayoneMain->getHelper()->extractClearingDataFromResponse($response);
+
+      if ($clearingData)
+      {
+        $session->moptClearingData = $clearingData;
+      }
+
       //save order
       $this->mopt_payone_saveOrder($response->getTxid(), $session->paymentReference);
     }
@@ -662,6 +677,26 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   /**
    * ask user wether to keep original submittted or corrected values
    */
+  public function ajaxVerifyShippingAddressAction()
+  {
+    $session  = Shopware()->Session();
+    $response = unserialize($session->moptShippingAddressCheckCorrectedAddress);
+    $this->View()->moptShippingAddressCheckOriginalAddress = $session->moptShippingAddressCheckOriginalAddress;
+    $this->View()->moptShippingAddressCheckCorrectedAddress = $response->toArray();
+
+    if ($session->moptShippingAddressCheckTarget)
+    {
+      $this->View()->moptShippingAddressCheckTarget = $session->moptShippingAddressCheckTarget;
+    }
+    else
+    {
+      $this->View()->moptShippingAddressCheckTarget = 'checkout';
+    }
+  }
+
+  /**
+   * ask user wether to keep original submittted or corrected values
+   */
   public function ajaxGetConsumerScoreUserAgreementAction()
   {
     $session = Shopware()->Session();
@@ -835,6 +870,40 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     unset($session->moptAddressCheckNeedsUserVerification);
     unset($session->moptAddressCheckOriginalAddress);
     unset($session->moptAddressCheckCorrectedAddress);
+  }
+
+  public function saveOriginalShippingAddressAction()
+  {
+    $session = Shopware()->Session();
+
+    $userId   = $session->sUserId;
+    $response = unserialize($session->moptShippingAddressCheckCorrectedAddress);
+    $config   = $this->moptPayoneMain->getPayoneConfig();
+
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringValue($response->getPersonstatus(), $config);
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
+    $this->moptPayoneMain->getHelper()->saveShippingAddressCheckResult($userId, $response, $mappedPersonStatus);
+
+    unset($session->moptShippingAddressCheckNeedsUserVerification);
+    unset($session->moptShippingAddressCheckOriginalAddress);
+    unset($session->moptShippingAddressCheckCorrectedAddress);
+  }
+
+  public function saveCorrectedShippingAddressAction()
+  {
+    $session  = Shopware()->Session();
+    $userId   = $session->sUserId;
+    $response = unserialize($session->moptShippingAddressCheckCorrectedAddress);
+    $config   = $this->moptPayoneMain->getPayoneConfig();
+
+    $this->moptPayoneMain->getHelper()->saveCorrectedShippingAddress($userId, $response);
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringValue($response->getPersonstatus(), $config);
+    $mappedPersonStatus = $this->moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
+    $this->moptPayoneMain->getHelper()->saveShippingAddressCheckResult($userId, $response, $mappedPersonStatus);
+
+    unset($session->moptShippingAddressCheckNeedsUserVerification);
+    unset($session->moptShippingAddressCheckOriginalAddress);
+    unset($session->moptShippingAddressCheckCorrectedAddress);
   }
 
   /**
