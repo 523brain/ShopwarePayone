@@ -12,3 +12,16 @@
   <input type="hidden" name="moptPaymentData[mopt_payone__onlinebanktransfertype]" type="text" id="mopt_payone__onlinebanktransfertype" value="PNT"/>
   <input type="hidden" name="moptPaymentData[mopt_payone__sofort_bankcountry]" type="text" id="mopt_payone__sofort_bankcountry" value="{$sUserData.additional.country.countryiso}"/>
 </div>
+<script type="text/javascript">
+  $('#mopt_payone__sofort_bankaccount').focus(function() {
+    $('#payment_mean{$payment_mean.id}').attr('checked',true);
+    $('#moptSavePayment{$payment_mean.id}').slideDown();
+    $('input[type="radio"]:not(:checked)').trigger('change');
+  });
+  
+  $('#mopt_payone__sofort_bankcode').focus(function() {
+    $('#payment_mean{$payment_mean.id}').attr('checked',true);
+    $('#moptSavePayment{$payment_mean.id}').slideDown();
+    $('input[type="radio"]:not(:checked)').trigger('change');
+  });
+</script>

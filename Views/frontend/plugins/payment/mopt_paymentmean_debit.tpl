@@ -14,3 +14,22 @@
   <p class="description">{*s name='PaymentDebitInfoFields'}{/s*}</p>
   <input type="hidden" name="moptPaymentData[mopt_payone__debit_bankcountry]" type="text" id="mopt_payone__debit_bankcountry" value="{$sUserData.additional.country.countryiso}"/>
 </div>
+<script type="text/javascript">
+  $('#mopt_payone__debit_bankaccount').focus(function() {
+    $('#payment_mean{$payment_mean.id}').attr('checked',true);
+    $('#moptSavePayment{$payment_mean.id}').slideDown();
+    $('input[type="radio"]:not(:checked)').trigger('change');
+  });
+  
+  $('#mopt_payone__debit_bankcode').focus(function() {
+    $('#payment_mean{$payment_mean.id}').attr('checked',true);
+    $('#moptSavePayment{$payment_mean.id}').slideDown();
+    $('input[type="radio"]:not(:checked)').trigger('change');
+  });
+  
+  $('#mopt_payone__debit_bankaccountholder').focus(function() {
+    $('#payment_mean{$payment_mean.id}').attr('checked',true);
+    $('#moptSavePayment{$payment_mean.id}').slideDown();
+    $('input[type="radio"]:not(:checked)').trigger('change');
+  });
+</script>

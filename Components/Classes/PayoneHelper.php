@@ -424,10 +424,6 @@ class Mopt_PayoneHelper
 
   public function isBillingAddressCheckValid($adresscheckLifetime, $moptPayoneAddresscheckResult, $moptPayoneAddresscheckDate)
   {
-//    if ($moptPayoneAddresscheckResult != 'VALID')
-//    {
-//      return false;
-//    }
     if (!$moptPayoneAddresscheckDate)
     {
       return false;
@@ -442,10 +438,6 @@ class Mopt_PayoneHelper
 
   public function isShippingAddressCheckValid($adresscheckLifetime, $moptPayoneAddresscheckResult, $moptPayoneAddresscheckDate)
   {
-//    if ($moptPayoneAddresscheckResult != 'VALID')
-//    {
-//      return false;
-//    }
     if (!$moptPayoneAddresscheckDate)
     {
       return false;
@@ -461,10 +453,6 @@ class Mopt_PayoneHelper
 
   public function isCosumerScoreCheckValid($consumerScoreCheckLifetime, $moptPayoneConsumerScoreCheckResult, $moptPayoneConsumerScoreCheckDate)
   {
-//    if ($moptPayoneConsumerScoreCheckResult != 'VALID')
-//    {
-//      return false;
-//    }
     if (!$moptPayoneConsumerScoreCheckDate)
     {
       return false;
@@ -480,71 +468,135 @@ class Mopt_PayoneHelper
 
   public function saveBillingAddressCheckResult($userId, $response, $mappedPersonStatus)
   {
-    //get user address id
-    $sql       = 'SELECT `id` FROM `s_user_billingaddress` WHERE userID = ?';
-    $billingId = Shopware()->Db()->fetchOne($sql, $userId);
+    if (!$userId)
+    {
+      return;
+    }
 
-    //save result
-    $sql = 'UPDATE `s_user_billingaddress_attributes`' .
-            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_personstatus=?, mopt_payone_addresscheck_result=?, mopt_payone_consumerscore_color=? WHERE billingID = ?';
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getPersonstatus(), $response->getStatus(), $mappedPersonStatus, $billingId));
+    $user             = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
+    $billing          = $user->getBilling();
+    $billingAttribute = $this->getOrCreateBillingAttribute($billing);
+
+    $billingAttribute->setMoptPayoneAddresscheckDate(date('Y-m-d'));
+    $billingAttribute->setMoptPayoneAddresscheckPersonstatus($response->getPersonstatus());
+    $billingAttribute->setMoptPayoneAddresscheckResult($response->getStatus());
+    $billingAttribute->setMoptPayoneConsumerscoreColor($mappedPersonStatus);
+
+    Shopware()->Models()->persist($billingAttribute);
+    Shopware()->Models()->flush();
   }
 
   public function saveShippingAddressCheckResult($userId, $response, $mappedPersonStatus)
   {
-    //get user shipping address id
-    $sql        = 'SELECT `id` FROM `s_user_shippingaddress` WHERE userID =?';
-    $shippingId = Shopware()->Db()->fetchOne($sql, $userId);
+    if (!$userId)
+    {
+      return;
+    }
 
-    $sql = 'UPDATE `s_user_shippingaddress_attributes`' .
-            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_personstatus=?, mopt_payone_addresscheck_result=?, mopt_payone_consumerscore_color=? WHERE shippingID =?';
 
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getPersonstatus(), $response->getStatus(), $mappedPersonStatus, $shippingId));
+    $user              = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
+    $shiping           = $user->getShipping();
+    $shippingAttribute = $this->getOrCreateShippingAttribute($shiping);
+
+    $shippingAttribute->setMoptPayoneAddresscheckDate(date('Y-m-d'));
+    $shippingAttribute->setMoptPayoneAddresscheckPersonstatus($response->getPersonstatus());
+    $shippingAttribute->setMoptPayoneAddresscheckResult($response->getStatus());
+    $shippingAttribute->setMoptPayoneConsumerscoreColor($mappedPersonStatus);
+
+    Shopware()->Models()->persist($shippingAttribute);
+    Shopware()->Models()->flush();
   }
 
   public function saveBillingAddressError($userId, $response)
   {
-    //get user address id
-    $sql       = 'SELECT `id` FROM `s_user_billingaddress` WHERE userID = ?';
-    $billingId = Shopware()->Db()->fetchOne($sql, $userId);
+    if (!$userId)
+    {
+      return;
+    }
 
-    //save result
-    $sql = 'UPDATE `s_user_billingaddress_attributes`' .
-            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_personstatus=?, mopt_payone_addresscheck_result=? WHERE billingID = ?';
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), 'NONE', $response->getStatus(), $billingId));
+
+    $user             = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
+    $billing          = $user->getBilling();
+    $billingAttribute = $this->getOrCreateBillingAttribute($billing);
+
+    $billingAttribute->setMoptPayoneAddresscheckDate(date('Y-m-d'));
+    $billingAttribute->setMoptPayoneAddresscheckPersonstatus('NONE');
+    $billingAttribute->setMoptPayoneAddresscheckResult($response->getStatus());
+
+    Shopware()->Models()->persist($billingAttribute);
+    Shopware()->Models()->flush();
   }
 
   public function saveShippingAddressError($userId, $response)
   {
-    //get user address id
-    $sql        = 'SELECT `id` FROM `s_user_shippingaddress` WHERE userID = ?';
-    $shippingId = Shopware()->Db()->fetchOne($sql, $userId);
+    if (!$userId)
+    {
+      return;
+    }
 
-    //save result
-    $sql = 'UPDATE `s_user_shippingaddress_attributes`' .
-            'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_result=? WHERE shippingID = ?';
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getStatus(), $shippingId));
+    $user              = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
+    $shiping           = $user->getShipping();
+    $shippingAttribute = $this->getOrCreateShippingAttribute($shiping);
+
+    $shippingAttribute->setMoptPayoneAddresscheckDate(date('Y-m-d'));
+    $shippingAttribute->setMoptPayoneAddresscheckResult($response->getStatus());
+
+    Shopware()->Models()->persist($shippingAttribute);
+    Shopware()->Models()->flush();
   }
 
   public function saveConsumerScoreCheckResult($userId, $response)
   {
-    $sql = 'UPDATE `s_user_attributes`' .
-            'SET mopt_payone_consumerscore_date=?, mopt_payone_consumerscore_result=?, mopt_payone_consumerscore_color=?, mopt_payone_consumerscore_value=? WHERE userID = ?';
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getStatus(), $response->getScore(), $response->getScorevalue(), $userId));
+    if (!$userId)
+    {
+      return;
+    }
+
+
+    $user          = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
+    $userAttribute = $this->getOrCreateUserAttribute($user);
+
+    $userAttribute->setMoptPayoneConsumerscoreDate(date('Y-m-d'));
+    $userAttribute->setMoptPayoneConsumerscoreResult($response->getStatus());
+    $userAttribute->setMoptPayoneConsumerscoreColor($response->getScore());
+    $userAttribute->setMoptPayoneConsumerscoreValue($response->getScorevalue());
+
+    Shopware()->Models()->persist($userAttribute);
+    Shopware()->Models()->flush();
   }
 
   public function saveConsumerScoreError($userId, $response)
   {
-    $sql = 'UPDATE `s_user_attributes`' .
-            'SET mopt_payone_consumerscore_date=?, mopt_payone_consumerscore_result=? WHERE userID = ?';
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), $response->getStatus(), $userId));
+    if (!$userId)
+    {
+      return;
+    }
+
+    $user          = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
+    $userAttribute = $this->getOrCreateUserAttribute($user);
+
+    $userAttribute->setMoptPayoneConsumerscoreDate(date('Y-m-d'));
+    $userAttribute->setMoptPayoneConsumerscoreResult($response->getStatus());
+
+    Shopware()->Models()->persist($userAttribute);
+    Shopware()->Models()->flush();
   }
 
   public function saveConsumerScoreDenied($userId)
   {
-    $sql = 'UPDATE `s_user_attributes`' .
-            'SET mopt_payone_consumerscore_date=?, mopt_payone_consumerscore_result=? WHERE userID = ?';
-    Shopware()->Db()->query($sql, array(date('Y-m-d'), 'DENIED', $userId));
+    if (!$userId)
+    {
+      return;
+    }
+
+    $user          = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
+    $userAttribute = $this->getOrCreateUserAttribute($user);
+
+    $userAttribute->setMoptPayoneConsumerscoreDate(date('Y-m-d'));
+    $userAttribute->setMoptPayoneConsumerscoreResult('DENIED');
+
+    Shopware()->Models()->persist($userAttribute);
+    Shopware()->Models()->flush();
   }
 
   public function saveCorrectedBillingAddress($userId, $response)
@@ -775,6 +827,78 @@ class Mopt_PayoneHelper
     return $attribute;
   }
 
+  public function getOrCreateBillingAttribute($object)
+  {
+    if ($attribute = $object->getAttribute())
+    {
+      return $attribute;
+    }
+
+    if ($object instanceof Shopware\Models\Customer\Billing)
+    {
+      if (!$attribute = Shopware()->Models()->getRepository('Shopware\Models\Attribute\CustomerBilling')
+              ->findOneBy(array('customerBillingId' => $object->getId())))
+      {
+        $attribute = new Shopware\Models\Attribute\CustomerBilling();
+      }
+    }
+    else
+    {
+      throw new Exception('Unknown attribute base class');
+    }
+
+    $object->setAttribute($attribute);
+    return $attribute;
+  }
+
+  public function getOrCreateShippingAttribute($object)
+  {
+    if ($attribute = $object->getAttribute())
+    {
+      return $attribute;
+    }
+
+    if ($object instanceof Shopware\Models\Customer\Shipping)
+    {
+      if (!$attribute = Shopware()->Models()->getRepository('Shopware\Models\Attribute\CustomerShipping')
+              ->findOneBy(array('customerShippingId' => $object->getId())))
+      {
+        $attribute = new Shopware\Models\Attribute\CustomerShipping();
+      }
+    }
+    else
+    {
+      throw new Exception('Unknown attribute base class');
+    }
+
+    $object->setAttribute($attribute);
+    return $attribute;
+  }
+
+  public function getOrCreateUserAttribute($object)
+  {
+    if ($attribute = $object->getAttribute())
+    {
+      return $attribute;
+    }
+
+    if ($object instanceof Shopware\Models\Customer\Customer)
+    {
+      if (!$attribute = Shopware()->Models()->getRepository('Shopware\Models\Attribute\Customer')
+              ->findOneBy(array('customerId' => $object->getId())))
+      {
+        $attribute = new Shopware\Models\Attribute\Customer();
+      }
+    }
+    else
+    {
+      throw new Exception('Unknown attribute base class');
+    }
+
+    $object->setAttribute($attribute);
+    return $attribute;
+  }
+
   public function mapTransactionStatus($order, $payoneConfig, $payoneStatus = null, $useOrm = true)
   {
     if ($payoneStatus === null)
@@ -811,11 +935,11 @@ class Mopt_PayoneHelper
   public function extractShippingCostAsOrderPosition($order)
   {
     //leave if no shipment costs are set
-    if($order->getInvoiceShipping() == 0)
+    if ($order->getInvoiceShipping() == 0)
     {
       return;
     }
-    
+
     $dispatch = $order->getDispatch();
     if (strpos($order->getPayment()->getName(), 'mopt_payone__') !== 0)
     {
@@ -907,34 +1031,20 @@ class Mopt_PayoneHelper
     return $userBillingAddressCheckData;
   }
 
-  public function getClearingDataFromOrderTxid($transactionId)
+  public function getClearingDataFromOrderId($orderId)
   {
     $data = array();
 
-    $builder = Shopware()->Models()->createQueryBuilder();
-    $builder->select(
-            'log.responseDetails as responseDetails'
-    )->from('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog', 'log');
-    $builder->where($builder->expr()->orx($builder->expr()->like('log.responseDetails', $builder->expr()->literal(
-                                    '%txid=' . $transactionId . '%'))));
-
-    $result = $builder->getQuery()->getArrayResult();
-
-    $dataResponse = explode('|', $result[0]['responseDetails']);
-    foreach ($dataResponse as $value)
+    if (!$order = Shopware()->Models()->getRepository('Shopware\Models\Order\Order')->find($orderId))
     {
-      $tmp           = explode('=', $value);
-      $data[$tmp[0]] = $tmp[1];
+      throw new Exception("Order not found.");
     }
 
-    if ($data['status'] == 'APPROVED')
-    {
-      return $data;
-    }
-    else
-    {
-      return false;
-    }
+    $attribute    = $order->getAttribute();
+    $clearingData = $attribute->getMoptPayoneClearingData();
+    json_decode($clearingData, $data);
+
+    return $data;
   }
 
   public function extractClearingDataFromResponse($response)

@@ -235,13 +235,13 @@ class Mopt_PayoneFormHandler
       $paymentData['formData']["mopt_payone__cc_month"] = $formData["mopt_payone__cc_month"];
     }
 
-    if (!$formData["mopt_payone__cc_year"])
+    if (!$formData["mopt_payone__cc_Year"])
     {
-      $paymentData['sErrorFlag']["mopt_payone__cc_year"] = true;
+      $paymentData['sErrorFlag']["mopt_payone__cc_Year"] = true;
     }
     else
     {
-      $paymentData['formData']["mopt_payone__cc_year"] = $formData["mopt_payone__cc_year"];
+      $paymentData['formData']["mopt_payone__cc_Year"] = $formData["mopt_payone__cc_Year"];
     }
 
     if (!$formData["mopt_payone__cc_paymentname"])

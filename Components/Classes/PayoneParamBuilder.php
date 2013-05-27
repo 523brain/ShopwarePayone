@@ -128,7 +128,28 @@ class Mopt_PayoneParamBuilder
 
   protected function getParamDebitAmount($order, $positionIds)
   {
-    return $this->getAmountFromPositions($order, $positionIds) * -1;
+    $amount = 0;
+    if (empty($positionIds))
+    {
+      //return $order->getInvoiceAmount();
+    }
+
+    foreach ($order->getDetails() as $position)
+    {
+      if (!in_array($position->getId(), $positionIds))
+      {
+        continue;
+      }
+
+      $positionAttribute = $this->payoneHelper->getOrCreateAttribute($position);
+
+      //add difference between total price and already captured amount
+      $amount += ($position->getPrice() * $position->getQuantity());
+    }
+
+    return $amount * -1;
+
+//    return $this->getAmountFromPositions($order, $positionIds) * -1;
   }
 
   protected function getParamCaptureAmount($order, $positionIds)
@@ -376,10 +397,24 @@ class Mopt_PayoneParamBuilder
    *
    * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_CashOnDelivery 
    */
-  public function getPaymentCashOnDelivery()
+  public function getPaymentCashOnDelivery($userData)
   {
     $payment = new Payone_Api_Request_Parameter_Authorization_PaymentMethod_CashOnDelivery();
-    $payment->setShippingprovider('DHL'); // DE:DHL / IT:BRT
+
+    switch ($userData['additional']['countryShipping']['countryiso'])
+    {
+      case 'DE':
+        {
+          $payment->setShippingprovider('DHL'); // DE:DHL / IT:BRT
+        }
+        break;
+      case 'IT':
+        {
+          $payment->setShippingprovider('BRT'); // DE:DHL / IT:BRT
+        }
+
+        break;
+    }
 
     return $payment;
   }
@@ -418,7 +453,7 @@ class Mopt_PayoneParamBuilder
   /**
    * collect all items
    */
-  public function getInvoicing($basket)
+  public function getInvoicing($basket, $shipment)
   {
     $params = array();
     $transaction = new Payone_Api_Request_Parameter_Invoicing_Transaction($params);
@@ -436,10 +471,12 @@ class Mopt_PayoneParamBuilder
       if ($article['modus'] == 2)
       {
         $params['it'] = Payone_Api_Enum_InvoicingItemType::VOUCHER;
+        $params['id'] = substr($article['articlename'], 0, 100);
       }
       if ($article['modus'] == 4)
       {
         $params['it'] = Payone_Api_Enum_InvoicingItemType::HANDLING;
+        $params['id'] = substr($article['articlename'], 0, 100);
       }
       $item         = new Payone_Api_Request_Parameter_Invoicing_Item($params);
       $transaction->addItem($item);
@@ -448,10 +485,10 @@ class Mopt_PayoneParamBuilder
     //add shipment as position
     $params = array();
 
-    $params['id'] = 'Shipment'; //article number
+    $params['id'] = substr($shipment['name'], 0, 100); //article number
     $params['pr'] = $basket['sShippingcostsWithTax']; //price
     $params['no'] = 1; // ordered quantity
-    $params['de'] = 'Versandkosten'; // description check length
+    $params['de'] = substr($shipment['name'], 0, 100); // description check length
     $params['va'] = number_format($basket['sShippingcostsTax'], 0, '.', ''); // vat
     $params['it'] = Payone_Api_Enum_InvoicingItemType::SHIPMENT;
 
@@ -464,7 +501,7 @@ class Mopt_PayoneParamBuilder
   /**
    * collect items from order
    */
-  public function getInvoicingFromOrder($order, $positionIds, $finalize = 'skipCaptureMode')
+  public function getInvoicingFromOrder($order, $positionIds, $finalize = 'skipCaptureMode', $debit = false)
   {
     $params = array();
     $transaction = new Payone_Api_Request_Parameter_Capture_Invoicing_Transaction($params);
@@ -477,10 +514,23 @@ class Mopt_PayoneParamBuilder
         continue;
       }
 
+      if (!$debit)
+      {
+        $positionAttribute = $this->payoneHelper->getOrCreateAttribute($position);
+        if ($positionAttribute->getMoptPayoneCaptured())
+        {
+          continue;
+        }
+      }
+
       $params = array();
 
       $params['id'] = $position->getArticleId(); //article number
-      $params['pr'] = $position->getPrice() * $position->getQuantity(); //price
+      $params['pr'] = $position->getPrice(); //price
+      if ($debit)
+      {
+        $params['pr'] = $params['pr'] * -1;
+      }
       $params['no'] = $position->getQuantity(); // ordered quantity
       $params['de'] = substr($position->getArticleName(), 0, 100); // description
       $params['va'] = $position->getTaxRate(); // vat
@@ -489,15 +539,18 @@ class Mopt_PayoneParamBuilder
       if ($mode == 2)
       {
         $params['it'] = Payone_Api_Enum_InvoicingItemType::VOUCHER;
+        $params['id'] = substr($position->getArticleName(), 0, 100); //article number
       }
       if ($mode == 4)
       {
         $params['it'] = Payone_Api_Enum_InvoicingItemType::HANDLING;
+        $params['id'] = substr($position->getArticleName(), 0, 100); //article number
       }
 
       if ($position->getArticleNumber() == 'SHIPPING')
       {
         $params['it'] = Payone_Api_Enum_InvoicingItemType::SHIPMENT;
+        $params['id'] = substr($position->getArticleName(), 0, 100); //article number
       }
       $item         = new Payone_Api_Request_Parameter_Invoicing_Item($params);
       $transaction->addItem($item);
@@ -533,12 +586,15 @@ class Mopt_PayoneParamBuilder
 //    {
 //      $params['state']           = $this->getStateFromId($billingFormData['state']);
 //    }
-    $params['country']      = $this->getCountryFromId($addressFormData['country']);
+    if (!empty($addressFormData['country']))
+    {
+      $params['country']  = $this->getCountryFromId($addressFormData['country']);
+      $params['language'] = $this->getLanguageFromCountryId($addressFormData['country']);
+    }
     if (isset($personalFormData['phone']))
     {
       $params['telephonenumber'] = $personalFormData['phone'];
     }
-    $params['language']        = $this->getLanguageFromCountryId($addressFormData['country']);
 
     return $params;
   }
@@ -563,9 +619,12 @@ class Mopt_PayoneParamBuilder
 //    {
 //      $params['state']           = $this->getStateFromId($billingFormData['state']);
 //    }
-    $params['country']      = $this->getCountryFromId($userFormData['countryID']);
+    if (!empty($userFormData['countryID']))
+    {
+      $params['country']  = $this->getCountryFromId($userFormData['countryID']);
+      $params['language'] = $this->getLanguageFromCountryId($userFormData['countryID']);
+    }
 //    $params['telephonenumber'] = $personalFormData['phone'];
-    $params['language']     = $this->getLanguageFromCountryId($userFormData['countryID']);
 
     return $params;
   }

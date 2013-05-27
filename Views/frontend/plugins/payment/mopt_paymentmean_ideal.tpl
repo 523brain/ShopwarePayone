@@ -18,3 +18,10 @@
   <input type="hidden" name="moptPaymentData[mopt_payone__onlinebanktransfertype]" type="text" id="mopt_payone__onlinebanktransfertype" value="IDL"/>
   <input type="hidden" name="moptPaymentData[mopt_payone__ideal_bankcountry]" type="text" id="mopt_payone__ideal_bankcountry" value="NL"/>
 </div>
+<script type="text/javascript">
+  $('#mopt_payone__ideal_bankgrouptype').focus(function() {
+    $('#payment_mean{$payment_mean.id}').attr('checked',true);
+    $('#moptSavePayment{$payment_mean.id}').slideDown();
+    $('input[type="radio"]:not(:checked)').trigger('change');
+  });
+</script>

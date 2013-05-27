@@ -71,10 +71,10 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
       $attributeData->setMoptPayoneStatus($request->getParam('txaction'));
       //@TODO set sequencenumber from request
 
-      $clearingData  = $this->moptPayone__helper->extractClearingDataFromResponse($payoneRequest);
+      $clearingData = $this->moptPayone__helper->extractClearingDataFromResponse($payoneRequest);
       if ($clearingData)
       {
-        $clearingData = http_build_query($clearingData);
+        $clearingData = json_encode($clearingData);
         $attributeData->setMoptPayoneClearingData($clearingData);
       }
 
@@ -119,7 +119,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
       //send transaction to each url
       foreach ($forwardingUrls as $url)
       {
-        if(empty($url))
+        if (empty($url))
         {
           continue;
         }

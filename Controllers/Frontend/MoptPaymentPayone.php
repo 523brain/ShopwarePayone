@@ -266,7 +266,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   protected function mopt_payone__cashondel()
   {
     $config   = $this->moptPayoneMain->getPayoneConfig($this->getPaymentId());
-    $payment  = $this->moptPayoneMain->getParamBuilder()->getPaymentCashOnDelivery();
+    $payment  = $this->moptPayoneMain->getParamBuilder()->getPaymentCashOnDelivery($this->getUserData());
     $response = $this->mopt_payone__buildAndCallPayment($config, 'cod', $payment);
 
     return $response;
@@ -364,13 +364,12 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
    */
   protected function mopt_payone_saveOrder($txId, $hash)
   {
-    $orderNr      = $this->saveOrder($txId, $hash);
-    $session      = Shopware()->Session();
-    $clearingData = null;
+    $orderNr = $this->saveOrder($txId, $hash);
+    $session = Shopware()->Session();
 
     if ($session->moptClearingData)
     {
-      $clearingData = http_build_query($session->moptClearingData);
+      $clearingData = json_encode($session->moptClearingData);
       unset($session->moptClearingData);
     }
 
@@ -378,9 +377,19 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     $sql     = 'SELECT `id` FROM `s_order` WHERE ordernumber = ?';
     $orderId = Shopware()->Db()->fetchOne($sql, $orderNr);
 
-    $sql = 'UPDATE `s_order_attributes`' .
-            'SET mopt_payone_txid=?, mopt_payone_is_authorized=?, mopt_payone_clearing_data=? WHERE orderID = ?';
-    Shopware()->Db()->query($sql, array($txId, $session->moptIsAuthorized, $clearingData, $orderId));
+    if ($clearingData)
+    {
+      $sql = 'UPDATE `s_order_attributes`' .
+              'SET mopt_payone_txid=?, mopt_payone_is_authorized=?, mopt_payone_clearing_data=? WHERE orderID = ?';
+      Shopware()->Db()->query($sql, array($txId, $session->moptIsAuthorized, $clearingData, $orderId));
+    }
+    else
+    {
+      $sql = 'UPDATE `s_order_attributes`' .
+              'SET mopt_payone_txid=?, mopt_payone_is_authorized=? WHERE orderID = ?';
+      Shopware()->Db()->query($sql, array($txId, $session->moptIsAuthorized, $orderId));
+    }
+
     unset($session->moptIsAuthorized);
 
     return $this->forward('finish', 'checkout', null, array('sAGB'      => 1, 'sUniqueID' => $hash));
@@ -491,7 +500,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     if ($config['submitBasket'] || $clearingType === 'fnc')
     {
-      $request->setInvoicing($paramBuilder->getInvoicing($this->getBasket()));
+      $request->setInvoicing($paramBuilder->getInvoicing($this->getBasket(), $this->getShipment()));
     }
 
     if ($payment)
@@ -596,65 +605,6 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   }
 
   /**
-   * prepare creditcard registration layer form for client api call and creditcard registration
-   * 
-   * @TODO get correct config
-   * 
-   */
-  public function ajaxCreditCardAction()
-  {
-    $config = $this->moptPayoneMain->getPayoneConfig();
-    $userId = Shopware()->Session()->sUserId;
-
-    $sql         = 'SELECT `moptPaymentData` FROM s_plugin_mopt_payone_payment_data WHERE userId = ?';
-    $paymentData = unserialize(Shopware()->Db()->fetchOne($sql, $userId));
-
-    $paymentMeans = $this->admin->sGetPaymentMeans();
-    foreach ($paymentMeans as $paymentMean)
-    {
-      if ($paymentMean['id'] == 'mopt_payone_creditcard')
-      {
-        $paymentMean['mopt_payone_credit_cards'] = $this->moptPayoneMain->getHelper()->mapCardLetter($paymentMean['mopt_payone_credit_cards']);
-        $this->View()->payment_mean = $paymentMean;
-        break;
-      }
-    }
-
-    $payoneParams             = $this->moptPayoneMain->getParamBuilder()->buildAuthorize();
-    $payoneParams['aid']      = $config['subaccountId'];
-    $payoneParams['language'] = 'de'; //@TODO get language
-
-
-    $serviceGenerateHash = $this->payoneServiceBuilder->buildServiceClientApiGenerateHash();
-
-    $request = new Payone_ClientApi_Request_CreditCardCheck();
-    $params  = array(
-        'aid'                => $payoneParams['aid'],
-        'mid'                => $payoneParams['mid'],
-        'portalid'           => $payoneParams['portalid'],
-        'mode'               => $payoneParams['mode'],
-        'encoding'           => 'UTF-8',
-        'language'           => 'de', //@TODO get language
-        'solution_version'   => '0.0.1',
-        'solution_name'      => 'mediaopt',
-        'integrator_version' => '4.0.5',
-        'integrator_name'    => 'Shopware',
-        'storecarddata'      => 'yes',
-    );
-    $request->init($params);
-    $request->setResponsetype('JSON');
-
-    $payoneParams['hash'] = $serviceGenerateHash->generate($request, $config['apiKey']);
-
-//    if($config['checkCc'])
-
-    $this->View()->moptPayoneCheckCc = $config['checkCc'];
-
-    $this->View()->sFormData = $paymentData;
-    $this->View()->moptPayoneParams = $payoneParams;
-  }
-
-  /**
    * ask user wether to keep original submittted or corrected values
    */
   public function ajaxVerifyAddressAction()
@@ -692,6 +642,16 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     {
       $this->View()->moptShippingAddressCheckTarget = 'checkout';
     }
+  }
+
+  /**
+   * ask user wether to keep original submittted or newly chosen payment method
+   */
+  public function ajaxVerifyPaymentAction()
+  {
+    $this->View()->moptSelectedPayment = $this->Request()->getParam('moptSelectedPayment');
+    $this->View()->moptOriginalPayment = $this->Request()->getParam('moptOriginalPayment');
+    $this->View()->moptCheckedId = $this->Request()->getParam('moptCheckedId');
   }
 
   /**
@@ -962,6 +922,23 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     if (!empty(Shopware()->Session()->sOrderVariables['sBasket']))
     {
       return Shopware()->Session()->sOrderVariables['sBasket'];
+    }
+    else
+    {
+      return null;
+    }
+  }
+
+  /**
+   * Returns the full basket data as array
+   *
+   * @return array
+   */
+  public function getShipment()
+  {
+    if (!empty(Shopware()->Session()->sOrderVariables['sDispatch']))
+    {
+      return Shopware()->Session()->sOrderVariables['sDispatch'];
     }
     else
     {

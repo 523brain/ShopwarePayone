@@ -119,14 +119,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getInfo()
   {
-    $img = base64_encode(file_get_contents(dirname(__FILE__) . '/logo.png'));
+    $img = base64_encode(file_get_contents(dirname(__FILE__) . '/logo.jpg'));
 
     return array(
         'version'     => $this->getVersion(),
         'author'      => 'derksen mediaopt GmbH',
         'label'       => $this->getLabel(),
-        'description' => '<p><img src="data:image/png;base64,' . $img . '" /></p> <p style="font-size:12px; font-weight: bold;">Pay save and secured through our payment service. For more information visit <a href="http://www.mediaopt.de">Mediaopt</a></p>',
-        'copyright'   => 'Copyright Â© 2012, mediaopt',
+        'description' => '<p><img src="data:image/png;base64,' . $img . '" /></p> <p style="font-size:12px; font-weight: bold;">For more information visit <a href="http://www.mediaopt.de">www.mediaopt.de</a></p>',
+        'copyright'   => 'Copyright © 2012, mediaopt',
         'support'     => 'shopware@mediaopt.de',
         'link'        => 'http://www.mediaopt.de/'
     );
@@ -253,6 +253,12 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     // add PAYONE data to pdf
     $this->subscribeEvent(
             'Shopware_Components_Document::assignValues::after', 'onBeforeRenderDocument'
+    );
+
+
+    //add clearing data to email
+    $this->subscribeEvent(
+            'Shopware_Modules_Order_SendMail_FilterVariables', 'onSendMailFilterVariablesFilter'
     );
   }
 
@@ -530,8 +536,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
   public function onPaymentAction(Enlight_Hook_HookArgs $arguments)
   {
-    $caller = $arguments->getSubject();
-    $userId = Shopware()->Session()->sUserId;
+    $subject = $arguments->getSubject();
+    $userId  = Shopware()->Session()->sUserId;
 
     $sql         = 'SELECT `moptPaymentData` FROM s_plugin_mopt_payone_payment_data WHERE userId = ?';
     $paymentData = unserialize(Shopware()->Db()->fetchOne($sql, $userId));
@@ -545,16 +551,16 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       foreach ($creditcardIds as $creditcardId)
       {
         // check if active id is in array
-        if ($creditcardId['id'] == $caller->View()->sFormData['payment'])
+        if ($creditcardId['id'] == $subject->View()->sFormData['payment'])
         {
           // set creditcard active
           $paymentData['payment'] = 'mopt_payone_creditcard';
-          $caller->View()->sFormData = $paymentData;
+          $subject->View()->sFormData = $paymentData;
           break;
         }
         else
         {
-          $caller->View()->sFormData += $paymentData;
+          $subject->View()->sFormData += $paymentData;
         }
       }
     }
@@ -787,18 +793,13 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         }
         if ($response->getStatus() == 'INVALID' || $response->getStatus() == 'ERROR')
         {
-          $ret['sErrorFlag']['mopt_payone_configured_message']     = true;
-          $ret['sErrorFlag']['mopt_payone_addresscheck']           = true;
-          $ret['sErrorMessages']['mopt_payone_configured_message'] = $config['adresscheckFailureMessage'];
-          $ret['sErrorMessages']['mopt_payone_addresscheck']       = utf8_encode($response->getCustomermessage());
-
           $moptPayoneMain->getHelper()->saveBillingAddressError($userId, $response);
           $session->moptPayoneBillingAddresscheckResult = serialize($response);
 
           $request = $this->Application()->Front()->Request(); // used to forward user
           switch ($config['adresscheckFailureHandling'])
           {
-            case 0: //cancel transaction -> redirect to payment choice
+            case 0: //cancel transaction -> redirect to address input
               {
                 $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
                 $arguments->setReturn($ret);
@@ -807,6 +808,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
               break;
             case 1: // reenter address -> redirect to address form
               {
+                $ret['sErrorFlag']['mopt_payone_configured_message']     = true;
+                $ret['sErrorFlag']['mopt_payone_addresscheck']           = true;
+                $ret['sErrorMessages']['mopt_payone_configured_message'] = $config['adresscheckFailureMessage'];
+                $ret['sErrorMessages']['mopt_payone_addresscheck']       = utf8_encode($response->getCustomermessage());
                 $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
                 $arguments->setReturn($ret);
                 return;
@@ -814,12 +819,12 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
               break;
             case 2: // perform consumerscore check
               {
-                $params   = $moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($billingFormData);
-                $response = $this->performConsumerScoreCheck($config, $params, $this->Application()->PayoneBuilder());
+                $billingFormData['countryID'] = $billingFormData['country'];
+                $params                       = $moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($billingFormData);
+                $response                     = $this->performConsumerScoreCheck($config, $params, $this->Application()->PayoneBuilder());
                 if (!$this->handleConsumerScoreCheckResult($response, $config, $userId))
                 {
                   $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
-                  $arguments->setReturn($ret);
                   return;
                 }
               }
@@ -1063,10 +1068,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       return;
     }
 
-    $userId         = Shopware()->Session()->sUserId;
-    $post           = $_POST['moptPaymentData'];
-    $paymentId      = $returnValues['paymentData']['name'];
-    $moptPayoneMain = $this->Application()->PayoneMain();
+    $userId                       = Shopware()->Session()->sUserId;
+    $post                         = $_POST['moptPaymentData'];
+    $post['mopt_payone__cc_Year'] = $_POST['mopt_payone__cc_Year'];
+    $paymentId                    = $returnValues['paymentData']['name'];
+    $moptPayoneMain               = $this->Application()->PayoneMain();
 
     //check if pay1 method, exit if not and delete pament data 
     if (!preg_match('#mopt_payone__#', $paymentId))
@@ -1075,6 +1081,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       return;
     }
 
+    //@TODO check if still used
     if ($_POST['register']['payment'] === 'mopt_payone_creditcard')
     {
       $paymentId = $_POST['register']['payment'];
@@ -1132,7 +1139,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
           if ($response->getStatus() == 'BLOCKED')
           {
             $returnValues['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
-            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht mÃ¶glich.';
+            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht möglich.';
             Shopware()->Session()->moptPayment = $post;
             $arguments->setReturn($returnValues);
             return;
@@ -1196,9 +1203,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       return;
     }
 
-    $returnValues['paymentID'] = $user['additional']['payment']['id'];
-
-    $arguments->setReturn($returnValues);
+    if (preg_match('#mopt_payone__cc#', $user['additional']['payment']['id']))
+    {
+      $returnValues['paymentID'] = $user['additional']['payment']['id'];
+      $arguments->setReturn($returnValues);
+    }
   }
 
   protected function performAddressCheck($config, $params, $payoneServiceBuilder, $mopt_payone__main, $billingAddressChecktype)
@@ -1567,37 +1576,41 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         . '}',
         '<div class="payment_note">'
         . '<br/>'
-        . '{$instruction.legalNote}<br/>'
-        . '{$instruction.note}<br/><br/>'
+        . '{$instruction.clearing_instructionnote}<br/>'
+        . '{$instruction.clearing_legalnote}}<br/><br/>'
         . '</div>'
         . '<table class="payment_instruction">'
         . '<tr>'
-        . '	<td>EmpfÃ¤nger:</td>'
-        . '	<td>{$instruction.recipient}</td>'
+        . '	<td>Empfänger:</td>'
+        . '	<td>{$instruction.clearing_bankaccountholder}</td>'
         . '</tr>'
         . '<tr>'
         . '	<td>Kontonr.:</td>'
-        . '	<td>{$instruction.accountNumber}</td>'
+        . '	<td>{$instruction.clearing_bankaccount}</td>'
         . '</tr>'
         . '<tr>'
         . '	<td>BLZ:</td>'
-        . '	<td>{$instruction.bankCode}</td>'
+        . '	<td>{$instruction.clearing_bankcode}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>IBAN:</td>'
+        . '	<td>{$instruction.clearing_bankiban}</td>'
+        . '</tr>'
+        . '<tr>'
+        . '	<td>BIC:</td>'
+        . '	<td>{$instruction.clearing_bankbic}</td>'
         . '</tr>'
         . '<tr>'
         . '	<td>Bank:</td>'
-        . '	<td>{$instruction.bankName}</td>'
+        . '	<td>{$instruction.clearing_bankname}</td>'
         . '</tr>'
         . '<tr>'
         . '	<td>Betrag:</td>'
         . '	<td>{$instruction.amount|currency}</td>'
         . '</tr>'
         . '<tr>'
-        . '	<td>Verwendungszweck 1:</td>'
-        . '	<td>{$instruction.reference}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>Verwendungszweck 2:</td>'
-        . '	<td>{config name=host}</td>'
+        . '	<td>Verwendungszweck:</td>'
+        . '	<td>{$instruction.clearing_reference}</td>'
         . '</tr>'
         . '</table>'
     ));
@@ -1801,6 +1814,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $view->addTemplateDir($this->Path() . 'Views/');
 
+    $view->extendsTemplate('frontend/checkout/mopt_confirm_payment.tpl');
+    $view->extendsTemplate('frontend/checkout/mopt_confirm.tpl');
+
+    if ($request->getControllerName() == 'account' || $request->getControllerName() == 'checkout' || $request->getControllerName() == 'register')
+    {
+      $view->assign('moptCreditCardCheckEnvironment', $this->moptCreditCardCheckEnvironment());
+    }
+
     $session = Shopware()->Session();
 
     if ($request->getControllerName() == 'account' && $request->getActionName() == 'index')
@@ -1989,14 +2010,15 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     //inject insert SQL
     $sql = str_replace("INSERT INTO s_order_attributes (", "INSERT INTO s_order_attributes (mopt_payone_txid, mopt_payone_status, mopt_payone_sequencenumber, " .
-            "mopt_payone_is_authorized, mopt_payone_is_finally_captured, ", $sql);
+            "mopt_payone_is_authorized, mopt_payone_is_finally_captured, mopt_payone_clearing_data, ", $sql);
 
     $sql = str_replace(" VALUES (", " VALUES (" .
             $db->quote($attributes->getMoptPayoneTxid()) . ', ' .
             $db->quote($attributes->getMoptPayoneStatus()) . ', ' .
             $db->quote($attributes->getMoptPayoneSequencenumber()) . ', ' .
             $db->quote($attributes->getMoptPayoneIsAuthorized()) . ', ' .
-            $db->quote($attributes->getMoptPayoneIsFinallyCaptured()) . ', ', $sql);
+            $db->quote($attributes->getMoptPayoneIsFinallyCaptured()) . ', ' .
+            $db->quote($attributes->getMoptPayoneClearingData()) . ', ', $sql);
 
     $args->setReturn($sql);
   }
@@ -2012,30 +2034,43 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     // get PAYONE data from log
     $moptPayoneMain = $this->Application()->PayoneMain();
-    $payoneData     = $moptPayoneMain->getHelper()->getClearingDataFromOrderTxid($document->_order->order->transactionID);
+    $payoneData     = $moptPayoneMain->getHelper()->getClearingDataFromOrderId($document->_order->order->id);
 
-    if (!$payoneData)
+    if (empty($payoneData))
     {
       return;
     }
 
-    $view               = $document->_view;
-    $paymentInstruction = array();
-    $paymentInstruction['recipient']     = $payoneData['clearing_bankaccountholder'];
-    $paymentInstruction['accountNumber'] = $payoneData['clearing_bankaccount'];
-    $paymentInstruction['bankCode']      = $payoneData['clearing_bankcode'];
-    $paymentInstruction['bankName']      = $payoneData['clearing_bankname'];
-    $paymentInstruction['reference']     = $payoneData['clearing_reference'];
-    $paymentInstruction['amount']        = $payoneData['clearing_bankbic'];
+    $payoneData['amount'] = $document->_order->order->invoice_amount;
 
+    $view                                   = $document->_view;
     $document->_template->addTemplateDir(dirname(__FILE__) . '/Views/');
-    $document->_template->assign('instruction', (array) $paymentInstruction);
+    $document->_template->assign('instruction', (array) $payoneData);
     $containerData                          = $view->getTemplateVars('Containers');
     $containerData['Footer']                = $containerData['PAYONE_Footer'];
     $containerData['Content_Info']          = $containerData['PAYONE_Content_Info'];
     $containerData['Content_Info']['value'] = $document->_template->fetch('string:' . $containerData['Content_Info']['value']);
     $containerData['Content_Info']['style'] = '}' . $containerData['Content_Info']['style'] . ' #info {';
     $view->assign('Containers', $containerData);
+  }
+
+  public function onSendMailFilterVariablesFilter(Enlight_Hook_HookArgs $args)
+  {
+    $variables = $args->getReturn();
+
+    //return if not payone preprepayment
+    if (!preg_match('#mopt_payone__acc_payinadvance#', $variables['additional']['payment']['name']))
+    {
+      return;
+    }
+
+    $session = Shopware()->Session();
+
+    if ($session->moptClearingData)
+    {
+      $variables['additional']['moptPayoneClearingData'] = $session->moptClearingData;
+      $args->setReturn($variables);
+    }
   }
 
   /**
@@ -2065,6 +2100,59 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     }
 
     $request->setActionName($action)->setDispatched(false);
+  }
+
+  protected function moptCreditCardCheckEnvironment()
+  {
+    $data = array();
+    $moptPayoneMain = $this->Application()->PayoneMain();
+    $config         = $moptPayoneMain->getPayoneConfig();
+    $userId         = Shopware()->Session()->sUserId;
+
+    $sql         = 'SELECT `moptPaymentData` FROM s_plugin_mopt_payone_payment_data WHERE userId = ?';
+    $paymentData = unserialize(Shopware()->Db()->fetchOne($sql, $userId));
+
+    $paymentMeans = Shopware()->Modules()->Admin()->sGetPaymentMeans();
+    foreach ($paymentMeans as $paymentMean)
+    {
+      if ($paymentMean['id'] == 'mopt_payone_creditcard')
+      {
+        $paymentMean['mopt_payone_credit_cards'] = $moptPayoneMain->getHelper()->mapCardLetter($paymentMean['mopt_payone_credit_cards']);
+        $data['payment_mean']                    = $paymentMean;
+        break;
+      }
+    }
+
+    $payoneParams             = $moptPayoneMain->getParamBuilder()->buildAuthorize();
+    $payoneParams['aid']      = $config['subaccountId'];
+    $payoneParams['language'] = 'de'; //@TODO get language
+
+    $serviceGenerateHash = $this->Application()->PayoneBuilder()->buildServiceClientApiGenerateHash();
+
+    $request = new Payone_ClientApi_Request_CreditCardCheck();
+    $params  = array(
+        'aid'                => $payoneParams['aid'],
+        'mid'                => $payoneParams['mid'],
+        'portalid'           => $payoneParams['portalid'],
+        'mode'               => $payoneParams['mode'],
+        'encoding'           => 'UTF-8',
+        'language'           => 'de', //@TODO get language
+        'solution_version'   => '0.0.1',
+        'solution_name'      => 'mediaopt',
+        'integrator_version' => '4.0.5',
+        'integrator_name'    => 'Shopware',
+        'storecarddata'      => 'yes',
+    );
+    $request->init($params);
+    $request->setResponsetype('JSON');
+
+    $payoneParams['hash'] = $serviceGenerateHash->generate($request, $config['apiKey']);
+
+    $data['moptPayoneCheckCc'] = $config['checkCc'];
+    $data['sFormData']         = $paymentData;
+    $data['moptPayoneParams']  = $payoneParams;
+
+    return $data;
   }
 
 }

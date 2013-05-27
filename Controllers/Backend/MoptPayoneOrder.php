@@ -43,7 +43,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
 
       if (preg_match('#mopt_payone__fin_billsafe#', $paymentName))
       {
-        $invoicing = $this->moptPayone__main->getParamBuilder()->getInvoicingFromOrder($order, $positionIds);
+        $invoicing = $this->moptPayone__main->getParamBuilder()->getInvoicingFromOrder($order, $positionIds, 'skipCaptureMode', true);
       }
 
       //call capture service
@@ -268,7 +268,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
   protected function moptPayoneSaveClearingData($order, $clearingData)
   {
     $attribute    = $this->moptPayone__helper->getOrCreateAttribute($order);
-    $clearingData = http_build_query($clearingData);
+    $clearingData = json_encode($clearingData);
     $attribute->setMoptPayoneClearingData($clearingData);
 
     Shopware()->Models()->persist($attribute);
