@@ -346,7 +346,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
   /**
    * Cancel action method
-   * renders automatically error.tpl, errormessage is already assigne e.g. mopt_payone__handleDirectFeedback
+   * renders automatically error.tpl, errormessage is already assigned e.g. mopt_payone__handleDirectFeedback
    * @TODO check if it's possible to redirect to checkout and display error
    */
   public function errorAction()
@@ -356,7 +356,6 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
   /**
    * acutally save order
-   * @TODO implement to save all Payone details
    *
    * @param type $txId
    * @param type $hash

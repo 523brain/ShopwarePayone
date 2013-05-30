@@ -69,6 +69,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     {
       $attributeData = $this->moptPayone__helper->getOrCreateAttribute($order);
       $attributeData->setMoptPayoneStatus($request->getParam('txaction'));
+      $attributeData->setMoptPayoneSequencenumber($payoneRequest->getSequencenumber());
       //@TODO set sequencenumber from request
 
       $clearingData = $this->moptPayone__helper->extractClearingDataFromResponse($payoneRequest);

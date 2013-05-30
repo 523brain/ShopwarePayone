@@ -21,9 +21,6 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @TODO check encoding param
-   * @TODO integrate possibility to use alternate configuration
-   * 
    * returns auth-parameters for API-calls
    * @return string 
    */
@@ -37,6 +34,11 @@ class Mopt_PayoneParamBuilder
     $authParameters['portalid'] = $this->payoneConfig['portalId'];
     $authParameters['key']      = $this->payoneConfig['apiKey'];
     $authParameters['aid']      = $this->payoneConfig['subaccountId'];
+
+    $authParameters['solution_name']      = 'mediaopt';
+    $authParameters['solution_version']   = Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap::getVersion();
+    $authParameters['integrator_name']    = 'shopware';
+    $authParameters['integrator_version'] = Shopware()->Config()->Version;
 
     if ($this->payoneConfig['liveMode'] == 1)
     {
@@ -209,25 +211,15 @@ class Mopt_PayoneParamBuilder
     $billingAddress = $userData['billingaddress'];
 
     $params['customerid'] = $userData['user']['customerId']; //@TODO check if it's better to use customernumber
-//    $params['userid'] = ''; // payone userid
-//    $params['salutation'] = $billingAddress['salutation'];
-//    $params['title'] = ''; // optional and not available in shopware
     $params['firstname']  = $billingAddress['firstname'];
     $params['lastname']   = $billingAddress['lastname'];
     $params['company']    = $billingAddress['company'];
     $params['street']     = $billingAddress['street'] . ' ' . $billingAddress['streetnumber'];
-//    $params['addressaddition'] = ''; // optional and not available in shopware
     $params['zip']        = $billingAddress['zipcode'];
     $params['city']       = $billingAddress['city'];
     $params['country']    = $userData['additional']['country']['countryiso'];
-
-//    if (!empty($billingAddress['stateID'])) //@TODO check if correct key
-//    {
-//      $params['state']           = $this->getStateFromId($billingAddress['stateID']);
-//    }
     $params['email']           = $userData['additional']['user']['email'];
     $params['telephonenumber'] = $billingAddress['phone'];
-//    $params['birthday']        = $billingAddress['birthday']; //@TODO check if date needs to be converted
     $params['language']        = strtolower($userData['additional']['country']['countryiso']);
     $params['ustid']           = $billingAddress['firstname'];
 
@@ -262,11 +254,6 @@ class Mopt_PayoneParamBuilder
     $params['shipping_street']    = $shippingAddress['street'] . ' ' . $shippingAddress['streetnumber'];
     $params['shipping_zip']       = $shippingAddress['zipcode'];
     $params['shipping_city']      = $shippingAddress['city'];
-
-//    if (!empty($shippingAddress['StateID'])) //@TODO check if correct key
-//    {
-//      $params['shipping_state']   = $this->getStateFromId($shippingAddress['StateID']);
-//    }
     $params['shipping_country'] = $this->getCountryFromId($shippingAddress['countryID']);
 
     $personalData = new Payone_Api_Request_Parameter_Authorization_DeliveryData($params);
@@ -274,7 +261,6 @@ class Mopt_PayoneParamBuilder
     return $personalData;
   }
 
-  //@TODO check return urls
   public function getPaymentPaypal($router)
   {
     $params = array();
@@ -305,7 +291,7 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @TODO get bankdetails
+   * get bankdetails
    */
   public function getPaymentInstantBankTransfer($router, $paymentData)
   {
@@ -392,9 +378,6 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @TODO check for country -> should be done by config and risk management
-   * @TODO get shipping provider
-   *
    * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_CashOnDelivery 
    */
   public function getPaymentCashOnDelivery($userData)
@@ -419,9 +402,6 @@ class Mopt_PayoneParamBuilder
     return $payment;
   }
 
-  /**
-   * @TODO check if we use just the pseudocardpan
-   */
   public function getPaymentCreditCard($router, $paymentData)
   {
     $params = array();
@@ -435,8 +415,7 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @TODO fill all params
-   * @TODO check really needed, complete params are not mandatory
+   * @TODO check if really needed, complete params are not mandatory
    */
   public function getBusiness()
   {
@@ -462,11 +441,11 @@ class Mopt_PayoneParamBuilder
     {
       $params = array();
 
-      $params['id'] = $article['articleID']; //article number
+      $params['id'] = $article['ordernumber']; //article number
       $params['pr'] = $article['priceNumeric']; //price
       $params['no'] = $article['quantity']; // ordered quantity
       $params['de'] = substr($article['articlename'], 0, 100); // description
-      $params['va'] = $article['tax_rate']; // vat
+      $params['va'] = number_format($article['tax_rate'], 0, '.', ''); // vat
       $params['it'] = Payone_Api_Enum_InvoicingItemType::GOODS; //item type
       if ($article['modus'] == 2)
       {
@@ -491,6 +470,8 @@ class Mopt_PayoneParamBuilder
     $params['de'] = substr($shipment['name'], 0, 100); // description check length
     $params['va'] = number_format($basket['sShippingcostsTax'], 0, '.', ''); // vat
     $params['it'] = Payone_Api_Enum_InvoicingItemType::SHIPMENT;
+
+    $params = array_map('utf8_encode', $params);
 
     $item = new Payone_Api_Request_Parameter_Invoicing_Item($params);
     $transaction->addItem($item);
@@ -525,7 +506,7 @@ class Mopt_PayoneParamBuilder
 
       $params = array();
 
-      $params['id'] = $position->getArticleId(); //article number
+      $params['id'] = $position->getArticleNumber(); //article number
       $params['pr'] = $position->getPrice(); //price
       if ($debit)
       {
@@ -533,7 +514,14 @@ class Mopt_PayoneParamBuilder
       }
       $params['no'] = $position->getQuantity(); // ordered quantity
       $params['de'] = substr($position->getArticleName(), 0, 100); // description
-      $params['va'] = $position->getTaxRate(); // vat
+      if ($position->getTaxRate() == 0)
+      {
+        $params['va'] = number_format($position->getTax()->getTax(), 0, '.', '');
+      }
+      else
+      {
+        $params['va'] = number_format($position->getTaxRate(), 0, '.', ''); // vat
+      }
       $params['it'] = Payone_Api_Enum_InvoicingItemType::GOODS; //item type
       $mode         = $position->getMode();
       if ($mode == 2)
@@ -552,6 +540,7 @@ class Mopt_PayoneParamBuilder
         $params['it'] = Payone_Api_Enum_InvoicingItemType::SHIPMENT;
         $params['id'] = substr($position->getArticleName(), 0, 100); //article number
       }
+      $params       = array_map('htmlspecialchars_decode', $params);
       $item         = new Payone_Api_Request_Parameter_Invoicing_Item($params);
       $transaction->addItem($item);
     }
@@ -582,10 +571,7 @@ class Mopt_PayoneParamBuilder
     $params['streetnumber'] = $addressFormData['streetnumber'];
     $params['zip']          = $addressFormData['zipcode'];
     $params['city']         = $addressFormData['city'];
-//    if (!empty($billingFormData['state'])) //@TODO check if correct key, only for US and Canada
-//    {
-//      $params['state']           = $this->getStateFromId($billingFormData['state']);
-//    }
+
     if (!empty($addressFormData['country']))
     {
       $params['country']  = $this->getCountryFromId($addressFormData['country']);
@@ -615,17 +601,12 @@ class Mopt_PayoneParamBuilder
     $params['streetnumber'] = $userFormData['streetnumber'];
     $params['zip']          = $userFormData['zipcode'];
     $params['city']         = $userFormData['city'];
-//    if (!empty($billingFormData['state'])) //@TODO check if correct key
-//    {
-//      $params['state']           = $this->getStateFromId($billingFormData['state']);
-//    }
+
     if (!empty($userFormData['countryID']))
     {
       $params['country']  = $this->getCountryFromId($userFormData['countryID']);
       $params['language'] = $this->getLanguageFromCountryId($userFormData['countryID']);
     }
-//    $params['telephonenumber'] = $personalFormData['phone'];
-
     return $params;
   }
 

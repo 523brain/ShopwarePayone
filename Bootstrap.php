@@ -81,7 +81,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   {
     switch ($oldVersion)
     {
-      case '1.0.0' :
+      case '0.0.1' :
         // Things to do to update a version 1.0.0 to the current version
         break;
     }
@@ -139,7 +139,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '0.0.1';
+    return '0.0.370';
   }
 
   public function getLabel()
@@ -165,25 +165,25 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'Enlight_Bootstrap_InitResource_PayoneMain', 'onInitResourcePayoneMain'
     );
 
-//risk management:Backend options
+    //risk management:Backend options
     $this->subscribeEvent(
             'Enlight_Controller_Action_PostDispatch_Backend_RiskManagement', 'onBackendRiskManagementPostDispatch'
     );
 
-//risk management:Frontend extend sAdmin - implement sRisk<MOPT_RISK> methods called by sManageRisks
+    //risk management:Frontend extend sAdmin - implement sRisk<MOPT_RISK> methods called by sManageRisks
     $this->subscribeEvent('sAdmin::sManageRisks::replace', 'sAdmin__sManageRisks');
 
-// group creditcard payments
+    // group creditcard payments
     $this->subscribeEvent(
             'sAdmin::sGetPaymentMeans::after', 'onGetPaymentMeans'
     );
 
-// hook for addresscheck
+    // hook for addresscheck
     $this->subscribeEvent(
             'sAdmin::sValidateStep2::after', 'onValidateStep2'
     );
 
-// hook for saving addresscheck result
+    // hook for saving addresscheck result
     $this->subscribeEvent(
             'sAdmin::sUpdateBilling::after', 'onUpdateBilling'
     );
@@ -193,12 +193,12 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'Shopware_Controllers_Frontend_Register::saveRegister::after', 'onUpdateBilling'
     );
 
-// hook for shipmentaddresscheck
+    // hook for shipmentaddresscheck
     $this->subscribeEvent(
             'sAdmin::sValidateStep2ShippingAddress::after', 'onValidateStep2ShippingAddress'
     );
 
-// hook for saving shipmentaddresscheck result
+    // hook for saving shipmentaddresscheck result
     $this->subscribeEvent(
             'sAdmin::sUpdateShipping::after', 'onUpdateShipping'
     );
@@ -208,37 +208,37 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'Shopware_Controllers_Frontend_Register::saveRegister::after', 'onUpdateShipping'
     );
 
-// save paymentdata
+    // save paymentdata
     $this->subscribeEvent(
             'sAdmin::sValidateStep3::after', 'onValidateStep3'
     );
 
-// hook for saving consumerscorecheck result
+    // hook for saving consumerscorecheck result
     $this->subscribeEvent(
             'sAdmin::sUpdatePayment::after', 'onUpdatePayment'
     );
 
-// hook for getting dispatch basket, used to calculate correct shipment costs for credit card payments
+    // hook for getting dispatch basket, used to calculate correct shipment costs for credit card payments
     $this->subscribeEvent(
             'sAdmin::sGetDispatchBasket::after', 'onGetDispatchBasket'
     );
 
-// load payment data from db to use for payment
+    // load payment data from db to use for payment
     $this->subscribeEvent(
             'Shopware_Controllers_Frontend_Account::paymentAction::after', 'onPaymentAction'
     );
 
-// load stored payment data for payment method overview
+    // load stored payment data for payment method overview
     $this->subscribeEvent(
             'Shopware_Controllers_Frontend_Checkout::getSelectedPayment::after', 'onGetSelectedPayment'
     );
 
-// check if addresscheck and consumerscore are valid if activated
+    // check if addresscheck and consumerscore are valid if activated
     $this->subscribeEvent(
             'Shopware_Controllers_Frontend_Checkout::confirmAction::after', 'onConfirmAction'
     );
 
-// extend backend order-overview
+    // extend backend order-overview
     $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Order', 'moptExtendController_Backend_Order');
 
     //add payone fields to list results
@@ -255,7 +255,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'Shopware_Components_Document::assignValues::after', 'onBeforeRenderDocument'
     );
 
-
     //add clearing data to email
     $this->subscribeEvent(
             'Shopware_Modules_Order_SendMail_FilterVariables', 'onSendMailFilterVariablesFilter'
@@ -264,14 +263,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
   protected function moptRegisterControllers()
   {
-//Frontend
+    //Frontend
     $this->subscribeEvent(
             'Enlight_Controller_Dispatcher_ControllerPath_Frontend_MoptPaymentPayone', 'onGetControllerPathFrontendMoptPaymentPayone');
 
     $this->subscribeEvent(
             'Enlight_Controller_Dispatcher_ControllerPath_Frontend_MoptShopNotification', 'moptRegisterController_Frontend_MoptShopNotification');
 
-//Backend
+    //Backend
     $this->subscribeEvent(
             'Enlight_Controller_Dispatcher_ControllerPath_Backend_MoptPaymentPayone', 'onGetControllerPathBackend');
 
@@ -369,7 +368,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       }
     }
 
-// Get all assigned rules
+    // Get all assigned rules
     $queryRules = $me->sSYSTEM->sDB_CONNECTION->GetAll("
             SELECT rule1, value1, rule2, value2
             FROM s_core_rulesets
@@ -384,8 +383,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       return;
     }
 
-// Get-User-Data
-// Get Basket
     if (empty($basket))
     {
       $session = Shopware()->Session();
@@ -420,7 +417,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         $rule["rule1"] = "sRisk" . $rule["rule1"];
         $rule["rule2"] = "sRisk" . $rule["rule2"];
 
-//mopt
         if (strpos($rule["rule1"], 'sRiskMOPT_PAYONE__') === 0)
         {
           $result1 = $this->$rule["rule1"]($user, $basket, $rule["value1"], $paymentID);
@@ -483,10 +479,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   }
 
   /**
-   * 
    * group creditcard payments
-   * 
-   * @TODO integrate comsumerscore check before choice of payment method
    * 
    * @param Enlight_Hook_HookArgs $arguments 
    */
@@ -690,7 +683,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   }
 
   /**
-   * 
    * billingaddress addresscheck
    * 
    * @param Enlight_Hook_HookArgs $arguments 
@@ -698,8 +690,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   public function onValidateStep2(Enlight_Hook_HookArgs $arguments)
   {
     $ret = $arguments->getReturn();
-
-    //@TODO do nothing when non pay1 method is choosen - tricky and maybe not possible
 
     if (!empty($ret['sErrorMessages']))
     {
@@ -901,7 +891,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     {
       $shippingAddressChecktype = $moptPayoneMain->getHelper()->getAddressChecktypeFromId($config['adresscheckShippingAdress']);
 
-      //@TODO check if basketvalue is within configured boundaries
       //return if shipping address checkmode is set to "no check"
       if (!$shippingAddressChecktype)
       {
@@ -920,11 +909,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $params           = $moptPayoneMain->getParamBuilder()->getAddressCheckParams($shippingFormData, $shippingFormData);
       $response         = $this->performAddressCheck($config, $params, $this->Application()->PayoneBuilder(), $moptPayoneMain, $shippingAddressChecktype);
 
-      //@TODO handle ERROR, VALID, INVALID and move to feedbackhandler
       if ($response->getStatus() == 'VALID')
       {
         $secStatus = $response->getSecstatus();
-        //@TODO check secstatus and config
         if ($secStatus == 10)
         {
           //valid address returned, save result to session
@@ -932,7 +919,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         }
         else
         {
-          //@TODO secstatus must be 20 - corrected address returned
+          //secstatus must be 20 - corrected address returned
           switch ($config['adresscheckAutomaticCorrection'])
           {
             case 0: //auto correction
@@ -1124,13 +1111,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
                           'Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'
                   ));
 
-          $request  = new Payone_Api_Request_BankAccountCheck($params);
-          $response = $service->check($request);
+          $request       = new Payone_Api_Request_BankAccountCheck($params);
+          $response      = $service->check($request);
+          $snippetObject = Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages');
 
           if ($response->getStatus() == 'ERROR' || $response->getStatus() == 'INVALID')
           {
             $returnValues['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
-            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = utf8_encode($response->getCustomermessage());
+            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = $snippetObject->get('ErrorInvalid', 'Bitte versuchen Sie es mit einer anderen Zahlungsart nochmal.', true);
             Shopware()->Session()->moptPayment = $post;
             $arguments->setReturn($returnValues);
             return;
@@ -1139,7 +1127,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
           if ($response->getStatus() == 'BLOCKED')
           {
             $returnValues['checkPayment']['sErrorFlag']['mopt_payone__account_invalid']     = true;
-            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht möglich.';
+            $returnValues['checkPayment']['sErrorMessages']['mopt_payone__account_invalid'] = $snippetObject->get('ErrorNoBankaccount', 'Zahlung mit der angegebenen Bankverbindung zur Zeit leider nicht möglich.', true);
             Shopware()->Session()->moptPayment = $post;
             $arguments->setReturn($returnValues);
             return;
@@ -1282,9 +1270,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             {
               // add errormessage 
               $ret['sErrorFlag']['mopt_payone_configured_message']     = true;
-//              $ret['sErrorFlag']['mopt_payone_corrected_message']      = true;
               $ret['sErrorMessages']['mopt_payone_configured_message'] = $config['adresscheckFailureMessage'];
-//              $ret['sErrorMessages']['mopt_payone_corrected_message']  = 'Adresse konnte korrigiert werden ';
               $moptPayoneMain->getHelper()->saveBillingAddressCheckResult($userId, $response, $mappedPersonStatus);
               $session->moptAddressCheckNeedsUserVerification = true;
               $session->moptAddressCheckOriginalAddress = $billingAddressData;
@@ -1313,7 +1299,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
           break;
         case 2: // perform consumerscore check
           {
-            //@TODO needs 2 be implemented
             $params   = $moptPayoneMain->getParamBuilder()->getConsumerscoreCheckParams($billingAddressData, $config['paymentId']);
             $response = $this->performConsumerScoreCheck($config, $params, $this->Application()->PayoneBuilder());
             $this->handleConsumerScoreCheckResult($response);
@@ -1417,7 +1402,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $moptPayoneMain = $this->Application()->PayoneMain();
 
     // handle ERROR, VALID, INVALID 
-    // @TODO move to feedbackhandler
     if ($response->getStatus() == 'VALID')
     {
       //save result
@@ -1463,12 +1447,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         $this->createPayment(array(
             'name'                  => $paymentMethod['name'],
             'description'           => $paymentMethod['description'],
-//          'action'                => $paymentMethod['action'],
             'action'                => 'mopt_payment_payone',
             'active'                => 1,
             'position'              => $paymentMethod['position'],
             'additionalDescription' => 'Pay save and secured through our payment service.',
-//          'additionalDescription' => $paymentMethod['additionalDescription'],
         ));
       }
       else
@@ -1477,12 +1459,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'name'                  => $paymentMethod['name'],
             'description'           => $paymentMethod['description'],
             'template'              => $paymentMethod['template'],
-//          'action'                => $paymentMethod['action'],
             'action'                => 'mopt_payment_payone',
             'active'                => 1,
             'position'              => $paymentMethod['position'],
             'additionalDescription' => 'Pay save and secured through our payment service.',
-//          'additionalDescription' => $paymentMethod['additionalDescription'],
         ));
       }
     }
@@ -1712,7 +1692,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   }
 
   /**
-   * @TODO move all addTemplateDir calls to controller init methods
    * Returns the path to a frontend controller for an event.
    *
    * @param Enlight_Event_EventArgs $args
@@ -1731,9 +1710,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onGetControllerPathBackend()
   {
-//    $this->Application()->Snippets()->addConfigDir(
-//            $this->Path() . 'Snippets/'
-//    );
     $this->Application()->Template()->addTemplateDir(
             $this->Path() . 'Views/'
     );
