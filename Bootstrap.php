@@ -50,27 +50,29 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    *
    * @return boolean 
    */
-  public function uninstall()
+  public function uninstall($deleteModels = false)
   {
-    $em       = $this->Application()->Models();
-    $platform = $em->getConnection()->getDatabasePlatform();
-    $platform->registerDoctrineTypeMapping('enum', 'string');
-    $tool     = new \Doctrine\ORM\Tools\SchemaTool($em);
+    if ($deleteModels)
+    {
+      $em       = $this->Application()->Models();
+      $platform = $em->getConnection()->getDatabasePlatform();
+      $platform->registerDoctrineTypeMapping('enum', 'string');
+      $tool     = new \Doctrine\ORM\Tools\SchemaTool($em);
 
-//     $classes = array(
-//     $em->getClassMetadata('Shopware\CustomModels\MoptPayoneTransactionLog\MoptPayoneTransactionLog'),
-//     );
-//     $tool->dropSchema($classes);
-//     
-//     $classes = array(
-//     $em->getClassMetadata('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'),
-//     );
-//     $tool->dropSchema($classes);
-//    $classes = array(
-//        $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig')
-//    );
-//    $tool->dropSchema($classes);
+      $classes = array(
+          $em->getClassMetadata('Shopware\CustomModels\MoptPayoneTransactionLog\MoptPayoneTransactionLog'),
+      );
+      $tool->dropSchema($classes);
 
+      $classes = array(
+          $em->getClassMetadata('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'),
+      );
+      $tool->dropSchema($classes);
+      $classes = array(
+          $em->getClassMetadata('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig')
+      );
+      $tool->dropSchema($classes);
+    }
     return true;
   }
 
@@ -79,10 +81,39 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function update($oldVersion)
   {
-    switch ($oldVersion)
+    //extra handling for early beta version
+    if (strpos($oldVersion, '0.0.') === 0)
     {
-      case '0.0.1' :
-        // Things to do to update a version 1.0.0 to the current version
+      $this->uninstall(true);
+      $this->install();
+
+      return true;
+    }
+
+    $versionCompare = version_compare($oldVersion, $this->getVersion());
+
+    switch ($versionCompare)
+    {
+      case -1 :
+        {
+          // lower version installed, uninstall old plugin and install new version
+          $this->uninstall();
+          $this->install();
+
+          return true;
+        }
+        break;
+      case 0 :
+        {
+          //same version installed, nothing to do
+          return true;
+        }
+        break;
+      case 1 :
+        {
+          //higher version installed, nothing to do
+          return true;
+        }
         break;
     }
   }
@@ -139,7 +170,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '0.0.370';
+    return '2.0.0';
   }
 
   public function getLabel()
