@@ -6,9 +6,9 @@
 class Mopt_PayoneMain
 {
 
-  const SCORING_GREEN  = 500;
-  const SCORING_YELLOW = 300;
-  const SCORING_RED    = 100;
+  const SCORING_GREEN         = 500;
+  const SCORING_YELLOW        = 300;
+  const SCORING_RED           = 100;
   const TRAFFIC_LIGHT__GREEN  = 1;
   const TRAFFIC_LIGHT__YELLOW = 2;
   const TRAFFIC_LIGHT__RED    = 3;
@@ -32,19 +32,13 @@ class Mopt_PayoneMain
   protected $paramBuilder = null;
 
   /**
-   * Payone FeedbackHandler
-   * @var MoptPayoneFeedbackHandler 
-   */
-  protected $feedbackHandler = null;
-
-  /**
    * Payone FormHandler
    * @var MoptPayoneFormHandler 
    */
   protected $formHandler = null;
 
   /**
-   * Payone FeedbackHandler
+   * Payone Helper
    * @var MoptPayoneHelper 
    */
   protected $helper = null;
@@ -64,9 +58,13 @@ class Mopt_PayoneMain
   }
 
   /**
-   * config-getter
-   * 
-   * @return type 
+   * returns config according to submitted payment id
+    returns global config if no payment id is submitted
+   *
+   * @param string $paymentId
+   * @param bool $forceReload
+   * @param bool $asArray
+   * @return array 
    */
   public function getPayoneConfig($paymentId = 0, $forceReload = false, $asArray = true)
   {
@@ -77,7 +75,7 @@ class Mopt_PayoneMain
 
     $repository = Shopware()->Models()->getRepository('Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig');
     $data       = $repository->getConfigByPaymentId($paymentId, $asArray);
-    
+
     if ($data === NULL)
     {
       $data = new Shopware\CustomModels\MoptPayoneConfig\MoptPayoneConfig();
@@ -99,20 +97,6 @@ class Mopt_PayoneMain
       $this->paramBuilder = new Mopt_PayoneParamBuilder($this->payoneConfig, $this->getHelper());
     }
     return $this->paramBuilder;
-  }
-
-  /**
-   * getter method for feedback handler
-   * 
-   * @return type 
-   */
-  public function getFeedbackHandler()
-  {
-    if (is_null($this->feedbackHandler))
-    {
-      $this->feedbackHandler = new Mopt_PayoneFeedbackhandler();
-    }
-    return $this->feedbackHandler;
   }
 
   /**

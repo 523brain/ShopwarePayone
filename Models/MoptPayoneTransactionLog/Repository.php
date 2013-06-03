@@ -14,7 +14,7 @@ use Shopware\Components\Model\ModelRepository;
 class Repository extends ModelRepository
 {
 
-    const KEY = 'p1_shopware_transaction';
+  const KEY = 'p1_shopware_transaction';
 
   /**
    * @return string
@@ -34,22 +34,28 @@ class Repository extends ModelRepository
     $transactionLog->setCreationDate(date('Y-m-d\TH:i:sP'));
     $transactionLog->setUpdateDate(date('Y-m-d\TH:i:sP'));
     $transactionLog->setTransactionDate(date('Y-m-d\TH:i:sP', $request->getTxtime()));
-    
+
     $transactionLog->setTransactionId($request->getTxid());
     $transactionLog->setOrderNr($request->getReference());
     $transactionLog->setSequenceNr($request->getSequencenumber());
     $transactionLog->setPaymentId(Shopware()->Config()->mopt_payone__paymentId);
     $transactionLog->setClaim($request->getReceivable());
     $transactionLog->setBalance($request->getBalance());
-    $transactionLog->setDetails($this->buildParamDetails($response));
+    $transactionLog->setDetails($this->buildParamDetails($request, $response));
 
     Shopware()->Models()->persist($transactionLog);
     Shopware()->Models()->flush();
   }
-  
-  protected function buildParamDetails($response)
+
+  /**
+   * 
+   *
+   * @param type $response
+   * @return type 
+   */
+  protected function buildParamDetails($request, $response)
   {
-    $details = array_merge($_POST, array('response_state' => $response->getStatus()));
+    $details = array_merge($request->toArray(), array('response_state' => $response->getStatus()));
     ksort($details);
     return $details;
   }
@@ -61,14 +67,9 @@ class Repository extends ModelRepository
    */
   public function saveException(Payone_Api_Request_Interface $request, Exception $ex)
   {
-//    $domainObject = $this->getFactory()->getModelApi();
-//    $domainObject->setData($request->toArray());
-//    $domainObject->setRawRequest($request->__toString());
-//    $domainObject->setStacktrace($ex->getTraceAsString());
-//    $domainObject->setResponse(Payone_Core_Model_System_Config_ResponseType::EXCEPTION);
-//    $domainObject->save();
+    
   }
-  
+
   /**
    * Returns an instance of the \Doctrine\ORM\Query object which selects a list of all mails.
    * @param $transactionId

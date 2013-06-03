@@ -117,11 +117,6 @@ class Mopt_PayoneHelper
             'description' => 'PAYONE BillSAFE',
             'template'    => null,
             'position'    => 20,),
-        array(
-            'name'        => 'mopt_payone__fin_commerzfin',
-            'description' => 'PAYONE CommerzFinanz',
-            'template'    => null,
-            'position'    => 21,),
     );
     ;
   }
@@ -129,8 +124,8 @@ class Mopt_PayoneHelper
   /**
    * adds Payone API value for creditcard
    * 
-   * @param type $cardData
-   * @return type
+   * @param array $cardData
+   * @return array
    */
   public function mapCardLetter($cardData)
   {
@@ -170,7 +165,7 @@ class Mopt_PayoneHelper
   /**
    * returns Payone API value for selected addresschecktype
    * 
-   * @param type $id
+   * @param string $id
    * @return string
    */
   public function getAddressChecktypeFromId($id)
@@ -194,7 +189,7 @@ class Mopt_PayoneHelper
   /**
    * returns Payone API value for selected addresschecktype
    * 
-   * @param type $id
+   * @param string $id
    * @return string
    */
   public function getConsumerScoreChecktypeFromId($id)
@@ -219,7 +214,7 @@ class Mopt_PayoneHelper
    * checks if addresscheck needs to be checked according to configuration
    * returns addresschecktype
    * 
-   * @param type $config
+   * @param array $config
    * @return boolean
    */
   public function isBillingAddressToBeChecked($config)
@@ -244,8 +239,8 @@ class Mopt_PayoneHelper
    * checks if addresscheck needs to be checked according to configuration
    * returns addresschecktype
    * 
-   * @param type $config
-   * @param type $basketValue
+   * @param array $config
+   * @param string $basketValue
    * @return boolean
    */
   public function isBillingAddressToBeCheckedWithBasketValue($config, $basketValue)
@@ -270,8 +265,8 @@ class Mopt_PayoneHelper
    * checks if addresscheck needs to be checked according to configuration
    * returns addresschecktype
    * 
-   * @param type $config
-   * @param type $basketValue
+   * @param array $config
+   * @param string $basketValue
    * @return boolean
    */
   public function isShippingAddressToBeCheckedWithBasketValue($config, $basketValue)
@@ -304,8 +299,8 @@ class Mopt_PayoneHelper
    * checks if addresscheck needs to be checked according to configuration
    * returns addresschecktype
    * 
-   * @param type $config
-   * @param type $basketValue
+   * @param array $config
+   * @param string $basketValue
    * @return boolean
    */
   public function isConsumerScoreToBeCheckedWithBasketValue($config, $basketValue)
@@ -315,7 +310,7 @@ class Mopt_PayoneHelper
       return false;
     }
 
-//no check when basket value outside configured values
+    //no check when basket value outside configured values
     if ($basketValue < $config['consumerscoreMinBasket'] || $basketValue > $config['consumerscoreMaxBasket'])
     {
       return false;
@@ -329,7 +324,7 @@ class Mopt_PayoneHelper
   /**
    * returns Payone API value for sandbox/live mode
    * 
-   * @param type $id
+   * @param string $id
    * @return string
    */
   public function getApiModeFromId($id)
@@ -344,6 +339,13 @@ class Mopt_PayoneHelper
     }
   }
 
+  /**
+   * get user scoring value
+   *
+   * @param string $personStatus
+   * @param array $config
+   * @return string 
+   */
   public function getUserScoringValue($personStatus, $config)
   {
     switch ($personStatus)
@@ -385,6 +387,12 @@ class Mopt_PayoneHelper
     }
   }
 
+  /**
+   * get user scoring color
+   *
+   * @param int $value
+   * @return string 
+   */
   public function getUserScoringColorFromValue($value)
   {
     switch ($value)
@@ -404,6 +412,12 @@ class Mopt_PayoneHelper
     }
   }
 
+  /**
+   * get user scoring value
+   *
+   * @param string $color
+   * @return int 
+   */
   public function getUserScoringValueFromColor($color)
   {
     switch ($color)
@@ -422,6 +436,14 @@ class Mopt_PayoneHelper
     return $color;
   }
 
+  /**
+   * check if check is still valid
+   *
+   * @param int $adresscheckLifetime
+   * @param string $moptPayoneAddresscheckResult
+   * @param date $moptPayoneAddresscheckDate
+   * @return boolean 
+   */
   public function isBillingAddressCheckValid($adresscheckLifetime, $moptPayoneAddresscheckResult, $moptPayoneAddresscheckDate)
   {
     if (!$moptPayoneAddresscheckDate)
@@ -436,6 +458,14 @@ class Mopt_PayoneHelper
     return true;
   }
 
+  /**
+   * check if check is still valid
+   *
+   * @param string $adresscheckLifetime
+   * @param string $moptPayoneAddresscheckResult
+   * @param date $moptPayoneAddresscheckDate
+   * @return boolean 
+   */
   public function isShippingAddressCheckValid($adresscheckLifetime, $moptPayoneAddresscheckResult, $moptPayoneAddresscheckDate)
   {
     if (!$moptPayoneAddresscheckDate)
@@ -451,6 +481,14 @@ class Mopt_PayoneHelper
     return true;
   }
 
+  /**
+   * check if check is still valid
+   *
+   * @param string $consumerScoreCheckLifetime
+   * @param string $moptPayoneConsumerScoreCheckResult
+   * @param date $moptPayoneConsumerScoreCheckDate
+   * @return boolean 
+   */
   public function isCosumerScoreCheckValid($consumerScoreCheckLifetime, $moptPayoneConsumerScoreCheckResult, $moptPayoneConsumerScoreCheckDate)
   {
     if (!$moptPayoneConsumerScoreCheckDate)
@@ -466,6 +504,14 @@ class Mopt_PayoneHelper
     return true;
   }
 
+  /**
+   * save check result
+   *
+   * @param string $userId
+   * @param object $response
+   * @param string $mappedPersonStatus
+   * @return mixed 
+   */
   public function saveBillingAddressCheckResult($userId, $response, $mappedPersonStatus)
   {
     if (!$userId)
@@ -486,6 +532,14 @@ class Mopt_PayoneHelper
     Shopware()->Models()->flush();
   }
 
+  /**
+   * save check result
+   *
+   * @param string $userId
+   * @param object $response
+   * @param string $mappedPersonStatus
+   * @return mixed 
+   */
   public function saveShippingAddressCheckResult($userId, $response, $mappedPersonStatus)
   {
     if (!$userId)
@@ -507,6 +561,13 @@ class Mopt_PayoneHelper
     Shopware()->Models()->flush();
   }
 
+  /**
+   * save check error
+   *
+   * @param string $userId
+   * @param object $response
+   * @return mixed 
+   */
   public function saveBillingAddressError($userId, $response)
   {
     if (!$userId)
@@ -527,6 +588,13 @@ class Mopt_PayoneHelper
     Shopware()->Models()->flush();
   }
 
+  /**
+   * save check error
+   *
+   * @param string $userId
+   * @param object $response
+   * @return mixed 
+   */
   public function saveShippingAddressError($userId, $response)
   {
     if (!$userId)
@@ -545,13 +613,19 @@ class Mopt_PayoneHelper
     Shopware()->Models()->flush();
   }
 
+  /**
+   * save check resuklt
+   *
+   * @param string $userId
+   * @param object $response
+   * @return mixed 
+   */
   public function saveConsumerScoreCheckResult($userId, $response)
   {
     if (!$userId)
     {
       return;
     }
-
 
     $user          = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
     $userAttribute = $this->getOrCreateUserAttribute($user);
@@ -565,6 +639,13 @@ class Mopt_PayoneHelper
     Shopware()->Models()->flush();
   }
 
+  /**
+   * save check error
+   *
+   * @param string $userId
+   * @param object $response
+   * @return mixed 
+   */
   public function saveConsumerScoreError($userId, $response)
   {
     if (!$userId)
@@ -582,6 +663,12 @@ class Mopt_PayoneHelper
     Shopware()->Models()->flush();
   }
 
+  /**
+   * save check denied
+   *
+   * @param string $userId
+   * @return mixed 
+   */
   public function saveConsumerScoreDenied($userId)
   {
     if (!$userId)
@@ -599,6 +686,12 @@ class Mopt_PayoneHelper
     Shopware()->Models()->flush();
   }
 
+  /**
+   * save corrected address
+   *
+   * @param string $userId
+   * @param object $response 
+   */
   public function saveCorrectedBillingAddress($userId, $response)
   {
     //get user address id
@@ -612,6 +705,12 @@ class Mopt_PayoneHelper
         $userId));
   }
 
+  /**
+   * save corrected address
+   *
+   * @param string $userId
+   * @param object $response 
+   */
   public function saveCorrectedShippingAddress($userId, $response)
   {
     //get user address id
@@ -625,6 +724,11 @@ class Mopt_PayoneHelper
         $userId));
   }
 
+  /**
+   * reset address check data
+   *
+   * @param string $userId 
+   */
   public function resetAddressCheckData($userId)
   {
     $sql       = 'SELECT `id` FROM `s_user_billingaddress` WHERE userID = ?';
@@ -635,6 +739,11 @@ class Mopt_PayoneHelper
     Shopware()->Db()->query($sql, array('NULL', 'NULL', $billingId));
   }
 
+  /**
+   * delete saved payment data
+   *
+   * @param string $userId 
+   */
   public function deletePaymentData($userId)
   {
     $sql    = 'SELECT userId FROM s_plugin_mopt_payone_payment_data WHERE userId = ' . $userId;
@@ -647,6 +756,11 @@ class Mopt_PayoneHelper
     }
   }
 
+  /**
+   * set payone prepayment as payment method
+   *
+   * @param string $userId 
+   */
   public function setPayonePrepaymentAsPayment($userId)
   {
     $sql       = "SELECT id FROM s_core_paymentmeans WHERE name LIKE 'mopt_payone__acc_payinadvance'";
@@ -656,6 +770,12 @@ class Mopt_PayoneHelper
     Shopware()->Db()->query($sql, array($paymentId, $userId));
   }
 
+  /**
+   * save payment data
+   *
+   * @param string $userId
+   * @param array $paymentData 
+   */
   public function savePaymentData($userId, $paymentData)
   {
     $sql         = 'replace into `s_plugin_mopt_payone_payment_data`' .
@@ -664,6 +784,12 @@ class Mopt_PayoneHelper
     Shopware()->Db()->query($sql, array($userId, $paymentData));
   }
 
+  /**
+   * get address attributes
+   *
+   * @param string $userId
+   * @return array 
+   */
   public function getShippingAddressAttributesFromUserId($userId)
   {
     //get shippingaddress attribute
@@ -686,6 +812,12 @@ class Mopt_PayoneHelper
     return $shippingAttributes;
   }
 
+  /**
+   * get bank account check type
+   *
+   * @param array $config
+   * @return int 
+   */
   public function getBankAccountCheckType($config)
   {
     switch ($config['checkAccount'])
@@ -707,6 +839,13 @@ class Mopt_PayoneHelper
     return $checkType;
   }
 
+  /**
+   * get consumer score
+   *
+   * @param array $user
+   * @param array $config
+   * @return int 
+   */
   public function getScoreFromUserAccordingToPaymentConfig($user, $config)
   {
     //if addresscheck enabled
@@ -787,6 +926,12 @@ class Mopt_PayoneHelper
     return -3;
   }
 
+  /**
+   * returns payment name
+   *
+   * @param string $paymentID
+   * @return string 
+   */
   public function getPaymentNameFromId($paymentID)
   {
     $sql         = 'SELECT `name` FROM `s_core_paymentmeans` WHERE id = ?';
@@ -795,6 +940,13 @@ class Mopt_PayoneHelper
     return $paymentName;
   }
 
+  /**
+   * get or create attribute data for given object
+   *
+   * @param object $object
+   * @return \Shopware\Models\Attribute\OrderDetail
+   * @throws Exception 
+   */
   public function getOrCreateAttribute($object)
   {
     if ($attribute = $object->getAttribute())
@@ -827,6 +979,13 @@ class Mopt_PayoneHelper
     return $attribute;
   }
 
+  /**
+   * get or create attribute data for given object
+   *
+   * @param Billing $object
+   * @return \Shopware\Models\Attribute\CustomerBilling
+   * @throws Exception 
+   */
   public function getOrCreateBillingAttribute($object)
   {
     if ($attribute = $object->getAttribute())
@@ -851,6 +1010,13 @@ class Mopt_PayoneHelper
     return $attribute;
   }
 
+  /**
+   * get or create attribute data for given object
+   *
+   * @param Shipping $object
+   * @return \Shopware\Models\Attribute\CustomerShipping
+   * @throws Exception 
+   */
   public function getOrCreateShippingAttribute($object)
   {
     if ($attribute = $object->getAttribute())
@@ -875,6 +1041,13 @@ class Mopt_PayoneHelper
     return $attribute;
   }
 
+  /**
+   * get or create attribute data for given object
+   *
+   * @param Customer $object
+   * @return \Shopware\Models\Attribute\Customer
+   * @throws Exception 
+   */
   public function getOrCreateUserAttribute($object)
   {
     if ($attribute = $object->getAttribute())
@@ -899,6 +1072,14 @@ class Mopt_PayoneHelper
     return $attribute;
   }
 
+  /**
+   * map transaction status
+   *
+   * @param object $order
+   * @param array $payoneConfig
+   * @param string $payoneStatus
+   * @param bool $useOrm 
+   */
   public function mapTransactionStatus($order, $payoneConfig, $payoneStatus = null, $useOrm = true)
   {
     if ($payoneStatus === null)
@@ -932,6 +1113,12 @@ class Mopt_PayoneHelper
     }
   }
 
+  /**
+   * extract shipping cost and insert as order position
+   *
+   * @param object $order
+   * @return mixed 
+   */
   public function extractShippingCostAsOrderPosition($order)
   {
     //leave if no shipment costs are set
@@ -992,6 +1179,12 @@ class Mopt_PayoneHelper
     $db->exec($sql);
   }
 
+  /**
+   * get consumerscore check data
+   *
+   * @param string $userId
+   * @return array 
+   */
   public function getConsumerScoreDataFromUserId($userId)
   {
     $userCconsumerScoreData = array();
@@ -1010,6 +1203,12 @@ class Mopt_PayoneHelper
     return $userCconsumerScoreData;
   }
 
+  /**
+   * get check data
+   *
+   * @param string $userId
+   * @return array 
+   */
   public function getBillingAddresscheckDataFromUserId($userId)
   {
     $userBillingAddressCheckData = array();
@@ -1031,6 +1230,13 @@ class Mopt_PayoneHelper
     return $userBillingAddressCheckData;
   }
 
+  /**
+   * returns clearing data
+   *
+   * @param string $orderId
+   * @return array
+   * @throws Exception 
+   */
   public function getClearingDataFromOrderId($orderId)
   {
     $data = array();
@@ -1047,6 +1253,12 @@ class Mopt_PayoneHelper
     return $data;
   }
 
+  /**
+   * extract clearing data from response object
+   *
+   * @param object $response
+   * @return boolean 
+   */
   public function extractClearingDataFromResponse($response)
   {
     $responseData = $response->toArray();

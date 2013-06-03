@@ -63,7 +63,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     $service = $this->moptPayoneInitTransactionService($key, $validIps);
 
     $response      = $service->handleByPost();
-    $payoneRequest = $service->getMapper()->mapByArray($_POST);
+    $payoneRequest = $service->getMapper()->mapByArray($request->getPost());
 
     if ($response->getStatus() == $response::STATUS_OK)
     {

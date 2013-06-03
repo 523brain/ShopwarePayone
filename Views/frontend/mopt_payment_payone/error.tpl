@@ -28,10 +28,10 @@
   <br />
 
   <div class="actions">
-    <a class="button-left large left" href="{url controller=checkout action=cart}" title="{s name=PaymentLinkChangeBasket}Warenkorb ändern{/s}">
+    <a class="button-left large left" href="{url controller=checkout action=cart forceSecure}" title="{s name=PaymentLinkChangeBasket}Warenkorb ändern{/s}">
       {se name=PaymentLinkChangeBasket}{/se}
     </a>
-    <a class="button-right large right" href="{url controller=account action=payment sTarget=checkout sChange=1}" title="{s name=PaymentLinkChange}Zahlungsart ändern{/s}">
+    <a class="button-right large right" href="{url controller=account action=payment sTarget=checkout sChange=1 forceSecure}" title="{s name=PaymentLinkChange}Zahlungsart ändern{/s}">
       {se name=PaymentLinkChange}{/se}
     </a>
   </div>

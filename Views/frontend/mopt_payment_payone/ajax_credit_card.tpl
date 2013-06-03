@@ -10,7 +10,7 @@
     </a>
   </div>
   <fieldset>
-    <form class="payment" action="{url controller='moptPaymentPayone' action='savePseudoCard'}" method="post" name="frmCheckCreditCard" id="frmCheckCreditCard">
+    <form class="payment" action="{url controller='moptPaymentPayone' action='savePseudoCard' forceSecure}" method="post" name="frmCheckCreditCard" id="frmCheckCreditCard">
       <div class="debit">
         <p class="none">
           <label for="mopt_payone__cc_accountholder_ajax">{*s name='PaymentDebitLabelName'}{/s*}Karteninhaber</label>
@@ -127,8 +127,8 @@
             {
               target = $('#mopt_payone__target').val();
             }
-            jQuery.post( '{url controller="moptPaymentPayone" action="savePseudoCard"}' , data ,function() {
-              window.location = "{url controller=account action=savePayment sTarget=$sTarget}" + target;
+            jQuery.post( '{url controller="moptPaymentPayone" action="savePseudoCard" forceSecure}' , data ,function() {
+              window.location = "{url controller=account action=savePayment sTarget=$sTarget forceSecure}" + target;
             });
           }
           else {

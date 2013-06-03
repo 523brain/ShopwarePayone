@@ -13,27 +13,27 @@
     <script type="text/javascript">
       <!--
       function checkConsumerScore() {
-        jQuery.post( '{url controller="moptPaymentPayone" action="checkConsumerScore"}' ,function(response) {
+        jQuery.post( '{url controller="moptPaymentPayone" action="checkConsumerScore" forceSecure}' ,function(response) {
           if(response == 'true')
           {
-            window.location = "{url controller=account action=savePayment sTarget=checkout}";
+            window.location = "{url controller=account action=savePayment sTarget=checkout forceSecure}";
           }
           else
           {
-            window.location = "{url controller=account action=payment sTarget=checkout}";
+            window.location = "{url controller=account action=payment sTarget=checkout forceSecure}";
           }
         });
       }
           
       function doNotCheckConsumerScore() {
-        jQuery.post( '{url controller="moptPaymentPayone" action="doNotCheckConsumerScore"}' ,function(response) {
+        jQuery.post( '{url controller="moptPaymentPayone" action="doNotCheckConsumerScore" forceSecure}' ,function(response) {
           if(response == 'true')
           {
-            window.location = "{url controller=account action=savePayment sTarget=checkout}";
+            window.location = "{url controller=account action=savePayment sTarget=checkout forceSecure}";
           }
           else
           {
-            window.location = "{url controller=account action=payment sTarget=checkout}";
+            window.location = "{url controller=account action=payment sTarget=checkout forceSecure}";
           }
         });
       }

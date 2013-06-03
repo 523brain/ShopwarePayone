@@ -33,7 +33,7 @@
       }
           
       function reloadPage() {
-        window.location = "{url controller=checkout action=confirm}";
+        window.location = "{url controller=checkout action=confirm forceSecure}";
       }
       // -->
     </script>

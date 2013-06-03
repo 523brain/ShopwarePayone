@@ -6,7 +6,7 @@
   $(document).ready(function() {
     // Handler for .ready() called.
 
-    $.post('{url controller=moptPaymentPayone action=ajaxGetConsumerScoreUserAgreement}', function (data) {
+    $.post('{url controller=moptPaymentPayone action=ajaxGetConsumerScoreUserAgreement forceSecure}', function (data) {
       $.modal(data, '', {
         'position': 'fixed',
         'width': 500,

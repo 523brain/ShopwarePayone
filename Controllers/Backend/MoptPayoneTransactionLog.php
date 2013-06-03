@@ -6,6 +6,9 @@
 class Shopware_Controllers_Backend_MoptPayoneTransactionLog extends Shopware_Controllers_Backend_ExtJs
 {
 
+  /**
+   * assigns transaction log entries to view 
+   */
   public function getTransactionLogsAction()
   {
     $start = $this->Request()->get('start');
@@ -39,6 +42,11 @@ class Shopware_Controllers_Backend_MoptPayoneTransactionLog extends Shopware_Con
     $this->View()->assign(array('success' => true, 'data'    => $result, 'total'   => $total));
   }
 
+  /**
+   * set detail data to specified log entry to view
+   *
+   * @return mixed 
+   */
   public function getDetailDataAction()
   {
     $request = $this->Request();
@@ -56,10 +64,12 @@ class Shopware_Controllers_Backend_MoptPayoneTransactionLog extends Shopware_Con
       $result[] = array('name'  => $key, 'value' => $value);
     }
 
-    //$this->View()->assign(array('success' => true, 'data' => $details[$type]));
     $this->View()->assign(array('success' => true, 'data'    => $result));
   }
-  
+
+  /**
+   * search transaction logs for search term and assign result to view
+   */
   public function getSearchResultAction()
   {
     $filters = $this->Request()->get('filter');
@@ -72,11 +82,6 @@ class Shopware_Controllers_Backend_MoptPayoneTransactionLog extends Shopware_Con
     {
       if ($filter['property'] == 'search' && !empty($filter['value']))
       {
-//        $builder->where('log.id = ?1 
-//          OR log.transactionId = ?1
-//          OR log.status = ?1
-//          OR log.portalId = ?1
-//        ')->setParameter(1, $filter['value']);
         $builder->where($builder->expr()->orx($builder->expr()->like('log.details', $builder->expr()->literal(
                                         '%' . $filter['value'] . '%'))));
       }

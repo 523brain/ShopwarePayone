@@ -45,7 +45,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   }
 
   /**
-   * @TODO remove comments, check if uninstall is necessary
    * perform all neccessary uninstall tasks and return true if successful
    *
    * @return boolean 
@@ -77,6 +76,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   }
 
   /**
+   * update plugin, check previous versions
+   * 
    * @param type $oldVersion 
    */
   public function update($oldVersion)
@@ -170,7 +171,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '2.0.0';
+    return '2.0.1';
   }
 
   public function getLabel()
@@ -303,9 +304,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     //Backend
     $this->subscribeEvent(
-            'Enlight_Controller_Dispatcher_ControllerPath_Backend_MoptPaymentPayone', 'onGetControllerPathBackend');
-
-    $this->subscribeEvent(
             'Enlight_Controller_Dispatcher_ControllerPath_Backend_MoptConfigPayone', 'onGetConfigControllerBackend');
 
     $this->subscribeEvent(
@@ -342,8 +340,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   public function sAdmin__sManageRisks(Enlight_Hook_HookArgs $arguments)
   {
     $me = $arguments->getSubject();
-
-
 
     $paymentID      = $arguments->get('paymentID');
     $basket         = $arguments->get('basket');
@@ -762,7 +758,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       }
       else
       {
-        $post             = $_POST["register"];
+        $postData         = Shopware()->Front()->Request()->getPost();
+        $post             = $postData["register"];
         $billingFormData  = $post['billing'];
         $personalFormData = $post['personal'];
 
@@ -916,6 +913,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     //get config data from main
     $moptPayoneMain = $this->Application()->PayoneMain();
     $config         = $moptPayoneMain->getPayoneConfig();
+    $postData       = Shopware()->Front()->Request()->getPost();
 
     //check if addresscheck is enabled
     if ($config['adresscheckActive'])
@@ -928,14 +926,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         return;
       }
 
-      if (isset($_POST['sSelectAddress']))
+      if (isset($postData['sSelectAddress']))
       {
         return;
       }
 
       $session          = Shopware()->Session();
       $userId           = $session->sUserId;
-      $post             = $_POST["register"];
+      $post             = $postData["register"];
       $shippingFormData = $post['shipping'];
       $params           = $moptPayoneMain->getParamBuilder()->getAddressCheckParams($shippingFormData, $shippingFormData);
       $response         = $this->performAddressCheck($config, $params, $this->Application()->PayoneBuilder(), $moptPayoneMain, $shippingAddressChecktype);
@@ -1087,8 +1085,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     }
 
     $userId                       = Shopware()->Session()->sUserId;
-    $post                         = $_POST['moptPaymentData'];
-    $post['mopt_payone__cc_Year'] = $_POST['mopt_payone__cc_Year'];
+    $postData                     = Shopware()->Front()->Request()->getPost();
+    $post                         = $postData['moptPaymentData'];
+    $post['mopt_payone__cc_Year'] = $postData['mopt_payone__cc_Year'];
     $paymentId                    = $returnValues['paymentData']['name'];
     $moptPayoneMain               = $this->Application()->PayoneMain();
 
@@ -1100,9 +1099,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     }
 
     //@TODO check if still used
-    if ($_POST['register']['payment'] === 'mopt_payone_creditcard')
+    if ($postData['register']['payment'] === 'mopt_payone_creditcard')
     {
-      $paymentId = $_POST['register']['payment'];
+      $paymentId = $postData['register']['payment'];
     }
 
     $paymentData = $moptPayoneMain->getFormHandler()->processPaymentForm($paymentId, $post);
@@ -1120,7 +1119,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     }
     else
     {
-      $paymentId       = $_POST['register']['payment'];
+      $paymentId       = $postData['register']['payment'];
       $config          = $moptPayoneMain->getPayoneConfig($paymentId);
       //get user data
       $user            = Shopware()->Modules()->Admin()->sGetUserData();
@@ -1479,7 +1478,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'name'                  => $paymentMethod['name'],
             'description'           => $paymentMethod['description'],
             'action'                => 'mopt_payment_payone',
-            'active'                => 1,
+            'active'                => 0,
             'position'              => $paymentMethod['position'],
             'additionalDescription' => 'Pay save and secured through our payment service.',
         ));
@@ -1732,19 +1731,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   {
     Shopware()->Template()->addTemplateDir(dirname(__FILE__) . '/Views/');
     return dirname(__FILE__) . '/Controllers/Frontend/MoptPaymentPayone.php';
-  }
-
-  /**
-   * Returns the path to a backend controller for an event.
-   *
-   * @return string
-   */
-  public function onGetControllerPathBackend()
-  {
-    $this->Application()->Template()->addTemplateDir(
-            $this->Path() . 'Views/'
-    );
-    return $this->Path() . 'Controllers/Backend/MoptPaymentPayone.php';
   }
 
   /**

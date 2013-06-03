@@ -6,6 +6,13 @@
 class Mopt_PayoneFormHandler
 {
 
+  /**
+   * process payment form
+   *
+   * @param string $paymentId
+   * @param array $formData
+   * @return atray 
+   */
   public function processPaymentForm($paymentId, $formData)
   {
     $paymentData = array();
@@ -39,6 +46,12 @@ class Mopt_PayoneFormHandler
     return $paymentData;
   }
 
+  /**
+   * process form data 
+   *
+   * @param array $formData
+   * @return array 
+   */
   protected function proccessSofortueberweisung($formData)
   {
     $paymentData = array();
@@ -78,6 +91,12 @@ class Mopt_PayoneFormHandler
     return $paymentData;
   }
 
+  /**
+   * process form data 
+   *
+   * @param array $formData
+   * @return array 
+   */
   protected function proccessGiropay($formData)
   {
     $paymentData = array();
@@ -110,6 +129,12 @@ class Mopt_PayoneFormHandler
     return $paymentData;
   }
 
+  /**
+   * process form data 
+   *
+   * @param array $formData
+   * @return array 
+   */
   protected function proccessEps($formData)
   {
     $paymentData = array();
@@ -128,6 +153,12 @@ class Mopt_PayoneFormHandler
     return $paymentData;
   }
 
+  /**
+   * process form data 
+   *
+   * @param array $formData
+   * @return array 
+   */
   protected function proccessIdeal($formData)
   {
     $paymentData = array();
@@ -146,6 +177,12 @@ class Mopt_PayoneFormHandler
     return $paymentData;
   }
 
+  /**
+   * process form data 
+   *
+   * @param array $formData
+   * @return array 
+   */
   protected function proccessDebitNote($formData)
   {
     $paymentData = array();
@@ -186,6 +223,12 @@ class Mopt_PayoneFormHandler
     return $paymentData;
   }
 
+  /**
+   * process form data 
+   *
+   * @param array $formData
+   * @return array 
+   */
   protected function proccessCreditCard($formData)
   {
     $paymentData = array();

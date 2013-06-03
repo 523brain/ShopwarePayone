@@ -309,15 +309,6 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
    * this action is submitted to Payone with redirect payments
    * url is called when customer payment fails on 3rd party site
    */
-  public function paymentPendingAction()
-  {
-    $this->View()->moptPayoneMessage = "Die Bezahlung wurde von PAYONE noch nicht bestätigt";
-  }
-
-  /**
-   * this action is submitted to Payone with redirect payments
-   * url is called when customer payment fails on 3rd party site
-   */
   public function failureAction()
   {
     $this->View()->errormessage = "Es ist ein Fehler aufgetreten";

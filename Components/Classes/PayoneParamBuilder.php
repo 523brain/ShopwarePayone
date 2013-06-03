@@ -11,8 +11,10 @@ class Mopt_PayoneParamBuilder
   const SEQUENCENUMBER_CAPTURE = 1;
 
   /**
-   * construct
-   * @param type $payoneConfig
+   * constructor, sets config and helper class
+   *
+   * @param array $payoneConfig
+   * @param object $payoneHelper 
    */
   public function __construct($payoneConfig, $payoneHelper)
   {
@@ -22,7 +24,9 @@ class Mopt_PayoneParamBuilder
 
   /**
    * returns auth-parameters for API-calls
-   * @return string 
+   *
+   * @param string $paymentId
+   * @return array 
    */
   protected function getAuthParameters($paymentId = 0)
   {
@@ -55,6 +59,7 @@ class Mopt_PayoneParamBuilder
 
   /**
    * build parameters for payment
+   * 
    * @return array 
    */
   public function buildAuthorize($paymentId = 0)
@@ -66,8 +71,12 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * build parameters for payment
-   * @return array 
+   * returns params to capture orders
+   *
+   * @param object $order
+   * @param array $postionIds
+   * @param bool $finalize
+   * @return \Payone_Api_Request_Parameter_Capture_Business 
    */
   public function buildOrderCapture($order, $postionIds, $finalize)
   {
@@ -100,6 +109,9 @@ class Mopt_PayoneParamBuilder
 
   /**
    * build parameters for debit
+   *
+   * @param object $order
+   * @param array $postionIds
    * @return array 
    */
   public function buildOrderDebit($order, $postionIds)
@@ -117,6 +129,7 @@ class Mopt_PayoneParamBuilder
 
   /**
    * increase last seq-number for non-auth'ed orders
+   * 
    * @param type $order
    * @return type
    * @throws Exception
@@ -150,15 +163,27 @@ class Mopt_PayoneParamBuilder
     }
 
     return $amount * -1;
-
-//    return $this->getAmountFromPositions($order, $positionIds) * -1;
   }
 
+  /**
+   * return amount to capture
+   *
+   * @param object $order
+   * @param array $positionIds
+   * @return string 
+   */
   protected function getParamCaptureAmount($order, $positionIds)
   {
     return $this->getAmountFromPositions($order, $positionIds);
   }
 
+  /**
+   * get amount from positions
+   *
+   * @param object $order
+   * @param array $positionIds
+   * @return string 
+   */
   protected function getAmountFromPositions($order, $positionIds)
   {
     $amount = 0;
@@ -185,6 +210,15 @@ class Mopt_PayoneParamBuilder
     return $amount;
   }
 
+  /**
+   * build params for bankaccount check
+   *
+   * @param string $paymentId
+   * @param string $checkType
+   * @param string $languageId
+   * @param array $bankData
+   * @return array 
+   */
   public function buildBankaccountcheck($paymentId, $checkType, $languageId, $bankData)
   {
     $params = array();
@@ -201,8 +235,10 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * build parameters for payment
-   * @return array 
+   * build personal data parameters 
+   *
+   * @param array $userData
+   * @return \Payone_Api_Request_Parameter_Authorization_PersonalData 
    */
   public function getPersonalData($userData)
   {
@@ -210,14 +246,14 @@ class Mopt_PayoneParamBuilder
 
     $billingAddress = $userData['billingaddress'];
 
-    $params['customerid'] = $userData['user']['customerId']; //@TODO check if it's better to use customernumber
-    $params['firstname']  = $billingAddress['firstname'];
-    $params['lastname']   = $billingAddress['lastname'];
-    $params['company']    = $billingAddress['company'];
-    $params['street']     = $billingAddress['street'] . ' ' . $billingAddress['streetnumber'];
-    $params['zip']        = $billingAddress['zipcode'];
-    $params['city']       = $billingAddress['city'];
-    $params['country']    = $userData['additional']['country']['countryiso'];
+    $params['customerid']      = $userData['user']['customerId']; //@TODO check if it's better to use customernumber
+    $params['firstname']       = $billingAddress['firstname'];
+    $params['lastname']        = $billingAddress['lastname'];
+    $params['company']         = $billingAddress['company'];
+    $params['street']          = $billingAddress['street'] . ' ' . $billingAddress['streetnumber'];
+    $params['zip']             = $billingAddress['zipcode'];
+    $params['city']            = $billingAddress['city'];
+    $params['country']         = $userData['additional']['country']['countryiso'];
     $params['email']           = $userData['additional']['user']['email'];
     $params['telephonenumber'] = $billingAddress['phone'];
     $params['language']        = strtolower($userData['additional']['country']['countryiso']);
@@ -241,7 +277,9 @@ class Mopt_PayoneParamBuilder
 
   /**
    * build parameters for payment
-   * @return array 
+   *
+   * @param array $userData
+   * @return \Payone_Api_Request_Parameter_Authorization_DeliveryData 
    */
   public function getDeliveryData($userData)
   {
@@ -254,13 +292,19 @@ class Mopt_PayoneParamBuilder
     $params['shipping_street']    = $shippingAddress['street'] . ' ' . $shippingAddress['streetnumber'];
     $params['shipping_zip']       = $shippingAddress['zipcode'];
     $params['shipping_city']      = $shippingAddress['city'];
-    $params['shipping_country'] = $this->getCountryFromId($shippingAddress['countryID']);
+    $params['shipping_country']   = $this->getCountryFromId($shippingAddress['countryID']);
 
     $personalData = new Payone_Api_Request_Parameter_Authorization_DeliveryData($params);
 
     return $personalData;
   }
 
+  /**
+   * returns paypal payment data object
+   *
+   * @param type $router
+   * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_Wallet 
+   */
   public function getPaymentPaypal($router)
   {
     $params = array();
@@ -275,6 +319,9 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
+   * returns payment data for dbitnote payment
+   *
+   * @param array $paymentData
    * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_DebitPayment 
    */
   public function getPaymentDebitNote($paymentData)
@@ -291,7 +338,11 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * get bankdetails
+   * build payment data object for instant bank transfer payment methods
+   *
+   * @param object $router
+   * @param array $paymentData
+   * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_OnlineBankTransfer 
    */
   public function getPaymentInstantBankTransfer($router, $paymentData)
   {
@@ -363,6 +414,10 @@ class Mopt_PayoneParamBuilder
 
   /**
    * create finance payment object
+   *
+   * @param string $financeType
+   * @param object $router
+   * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_Financing 
    */
   public function getPaymentFinance($financeType, $router)
   {
@@ -378,6 +433,9 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
+   * returns payment data for cash on delivery payment
+   *
+   * @param array $userData
    * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_CashOnDelivery 
    */
   public function getPaymentCashOnDelivery($userData)
@@ -402,6 +460,13 @@ class Mopt_PayoneParamBuilder
     return $payment;
   }
 
+  /**
+   * returns payment data for credit card payment
+   *
+   * @param object $router
+   * @param array $paymentData
+   * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_CreditCard 
+   */
   public function getPaymentCreditCard($router, $paymentData)
   {
     $params = array();
@@ -415,7 +480,10 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
+   * returns business parameters
    * @TODO check if really needed, complete params are not mandatory
+   *
+   * @return \Payone_Api_Request_Parameter_Authorization_Business 
    */
   public function getBusiness()
   {
@@ -431,6 +499,10 @@ class Mopt_PayoneParamBuilder
 
   /**
    * collect all items
+   *
+   * @param array $basket
+   * @param array $shipment
+   * @return \Payone_Api_Request_Parameter_Invoicing_Transaction 
    */
   public function getInvoicing($basket, $shipment)
   {
@@ -481,6 +553,12 @@ class Mopt_PayoneParamBuilder
 
   /**
    * collect items from order
+   *
+   * @param object $order
+   * @param array $positionIds
+   * @param bool $finalize
+   * @param bool $debit
+   * @return \Payone_Api_Request_Parameter_Capture_Invoicing_Transaction 
    */
   public function getInvoicingFromOrder($order, $positionIds, $finalize = 'skipCaptureMode', $debit = false)
   {
@@ -554,9 +632,12 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @param type $addressFormData
-   * @param type $personalFormData
-   * @return type 
+   * returns address check params
+   *
+   * @param array $addressFormData
+   * @param array $personalFormData
+   * @param string $paymentId
+   * @return array 
    */
   public function getAddressCheckParams($addressFormData, $personalFormData, $paymentId = 0)
   {
@@ -586,8 +667,11 @@ class Mopt_PayoneParamBuilder
   }
 
   /**
-   * @param type $userFormData
-   * @return type 
+   * returns consumerscore check params
+   *
+   * @param array $userFormData
+   * @param string $paymentId
+   * @return array 
    */
   public function getConsumerscoreCheckParams($userFormData, $paymentId = 0)
   {
@@ -610,6 +694,12 @@ class Mopt_PayoneParamBuilder
     return $params;
   }
 
+  /**
+   * get country from id
+   *
+   * @param string $id
+   * @return string 
+   */
   protected function getCountryFromId($id)
   {
     $sql     = 'SELECT `countryiso` FROM s_core_countries WHERE id = ' . $id;
@@ -617,6 +707,12 @@ class Mopt_PayoneParamBuilder
     return $country;
   }
 
+  /**
+   * get language from id
+   *
+   * @param string $id
+   * @return string 
+   */
   protected function getLanguageFromCountryId($id)
   {
     $sql      = 'SELECT `countryiso` FROM s_core_countries WHERE id = ' . $id;
@@ -625,6 +721,12 @@ class Mopt_PayoneParamBuilder
     return strtolower($language);
   }
 
+  /**
+   * get state from id
+   *
+   * @param string $id
+   * @return string 
+   */
   protected function getStateFromId($id)
   {
     $sql   = 'SELECT `shortcode` FROM s_core_countries_states WHERE id = ' . $id;
@@ -633,6 +735,11 @@ class Mopt_PayoneParamBuilder
     return $state;
   }
 
+  /**
+   * create random payment reference
+   *
+   * @return string 
+   */
   public function getParamPaymentReference()
   {
     return 'mopt_' . uniqid() . rand(10, 99);

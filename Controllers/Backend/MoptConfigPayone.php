@@ -68,7 +68,6 @@ class Shopware_Controllers_Backend_MoptConfigPayone extends Shopware_Controllers
     }
     $data = $this->validateFormData($data);
 
-//    $config = Mopt_PayoneMain::getInstance()->getPayoneConfig($data['paymentId'], true, false);
     $config = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->PayoneMain()->getInstance()->getPayoneConfig($data['paymentId'], true, false);
 
     if ($data['paymentId'] == $config->getPaymentId())
@@ -156,7 +155,7 @@ class Shopware_Controllers_Backend_MoptConfigPayone extends Shopware_Controllers
   }
 
   /**
-   * 
+   * get pament config action, returns config according to submitted payment id 
    */
   public function getPaymentConfigAction()
   {

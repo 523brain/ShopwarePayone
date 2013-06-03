@@ -166,13 +166,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
 
     //according to PAYONE, perform less checks in shop, let the API validate
     $attribute = $this->moptPayone__helper->getOrCreateAttribute($order);
-//    
-//    //is already authorized ? 
-//    if($attribute->getMoptPayoneIsAuthorized())
-//    {
-//      return false;
-//    }
-
+    
     return true;
   }
 

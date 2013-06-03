@@ -5,7 +5,7 @@ namespace Shopware\CustomModels\MoptPayoneConfig;
 use Shopware\Components\Model\ModelRepository;
 
 /**
- * Transaction Log Repository
+ * Payone Config Repository
  */
 class Repository extends ModelRepository
 {
@@ -34,11 +34,6 @@ class Repository extends ModelRepository
     }
 
     return $result;
-  }
-
-  public function deleteConfigByPaymentId($paymentId)
-  {
-    
   }
 
 }

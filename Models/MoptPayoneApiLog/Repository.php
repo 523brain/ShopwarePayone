@@ -29,14 +29,13 @@ class Repository extends ModelRepository
     $apiLog = new \Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog();
 
     //special transaction status handling
-    if($response instanceof \Payone_TransactionStatus_Request_Interface)
+    if ($response instanceof \Payone_TransactionStatus_Request_Interface)
     {
       $apiLog->setRequest(get_class($response));
     }
     else
     {
       $apiLog->setRequest($request->getRequest());
-      //$apiLog->setResponse($response->getResponse());
       $apiLog->setResponse($response->getStatus());
       $apiLog->setLiveMode($request->getMode());
       $apiLog->setMerchantId($request->getMid());
@@ -57,15 +56,8 @@ class Repository extends ModelRepository
    */
   public function saveException(Payone_Api_Request_Interface $request, Exception $ex)
   {
-//    $domainObject = $this->getFactory()->getModelApi();
-//    $domainObject->setData($request->toArray());
-//    $domainObject->setRawRequest($request->__toString());
-//    $domainObject->setStacktrace($ex->getTraceAsString());
-//    $domainObject->setResponse(Payone_Core_Model_System_Config_ResponseType::EXCEPTION);
-//    $domainObject->save();
+    
   }
-
-  //@TODO: implement query builder
 
   /**
    * Helper function to create the query builder
@@ -74,9 +66,7 @@ class Repository extends ModelRepository
   public function getApiLogQueryBuilder()
   {
     $builder = $this->getEntityManager()->createQueryBuilder();
-//    $builder->select(array('id', 'request', 'response', 'liveMode', 'merchantId', 'portalId', 'creationDate'))
     $builder->select(array('m.id', 'm.request', 'm.response', 'm.liveMode', 'm.merchantId', 'm.portalId', 'm.creationDate', 'm.requestDetails', 'm.responseDetails'))
-//    $builder->select('m.*')
             ->from('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog', 'm');
     return $builder;
   }

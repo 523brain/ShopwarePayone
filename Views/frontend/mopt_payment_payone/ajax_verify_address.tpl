@@ -19,14 +19,14 @@
       <script type="text/javascript">
         <!--
         function saveOriginalAddress() {
-            jQuery.post( '{url controller="moptPaymentPayone" action="saveOriginalAddress"}' ,function() {
-              window.location = "{url controller=account action=saveBilling sTarget=$moptAddressCheckTarget}";
+            jQuery.post( '{url controller="moptPaymentPayone" action="saveOriginalAddress" forceSecure}' ,function() {
+              window.location = "{url controller=account action=saveBilling sTarget=$moptAddressCheckTarget forceSecure}";
             });
           }
           
         function saveCorrectedAddress() {
-            jQuery.post( '{url controller="moptPaymentPayone" action="saveCorrectedAddress"}' ,function() {
-              window.location = "{url controller=account action=saveBilling sTarget=$moptAddressCheckTarget}";
+            jQuery.post( '{url controller="moptPaymentPayone" action="saveCorrectedAddress" forceSecure}' ,function() {
+              window.location = "{url controller=account action=saveBilling sTarget=$moptAddressCheckTarget forceSecure}";
             });
           }
         // -->

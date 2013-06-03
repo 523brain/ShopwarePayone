@@ -160,7 +160,7 @@
         mopt_payone__cc_paymentid : $('#mopt_payone__cc_cardtype option:selected').attr('mopt_payone__cc_paymentid'),
         mopt_payone__cc_paymentdescription : $('#mopt_payone__cc_cardtype option:selected').text()
       }
-      jQuery.post( '{url controller="moptPaymentPayone" action="savePseudoCard"}' , data ,function() {
+      jQuery.post( '{url controller="moptPaymentPayone" action="savePseudoCard" forceSecure}' , data ,function() {
         MoptSubmitPaymentForm();
       });
     }

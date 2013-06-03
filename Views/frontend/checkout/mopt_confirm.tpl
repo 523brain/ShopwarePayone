@@ -6,7 +6,7 @@
   $(document).ready(function() {
     // Handler for .ready() called.
 
-    $.post('{url controller=moptPaymentPayone action=ajaxVerifyAddress}', function (data) {
+    $.post('{url controller=moptPaymentPayone action=ajaxVerifyAddress forceSecure}', function (data) {
       $.modal(data, '', {
         'position': 'fixed',
         'width': 500,
@@ -41,7 +41,7 @@
       if(checkedValue != orgValue)
       {
         //show dialog
-        $.post("{url controller=moptPaymentPayone action=ajaxVerifyPayment}?moptSelectedPayment="+checkedLabel+"&moptOriginalPayment="+orgLabel+"&moptCheckedId="+checkedId+"", function (data) {
+        $.post("{url controller=moptPaymentPayone action=ajaxVerifyPayment forceSecure}?moptSelectedPayment="+checkedLabel+"&moptOriginalPayment="+orgLabel+"&moptCheckedId="+checkedId+"", function (data) {
           $.modal(data, '', {
             'position': 'fixed',
             'width': 500,
