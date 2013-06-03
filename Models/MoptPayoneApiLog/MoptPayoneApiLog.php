@@ -78,7 +78,7 @@ class MoptPayoneApiLog extends ModelEntity
   }
 
   /**
-   * add apiLog
+   * add apiLog to collection
    *
    * @param \Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog $apiLog
    */
@@ -88,7 +88,7 @@ class MoptPayoneApiLog extends ModelEntity
   }
 
   /**
-   * Set apiLogs
+   * Set apiLogs collection
    *
    * @param $apiLogs
    *
@@ -101,7 +101,7 @@ class MoptPayoneApiLog extends ModelEntity
   }
 
   /**
-   * Get apiLogs
+   * Get apiLogs collection
    *
    * @return \Doctrine\Common\Collections\Collection
    */

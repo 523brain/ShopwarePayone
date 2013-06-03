@@ -1204,7 +1204,7 @@ class Mopt_PayoneHelper
   }
 
   /**
-   * get check data
+   * get address check data
    *
    * @param string $userId
    * @return array 
