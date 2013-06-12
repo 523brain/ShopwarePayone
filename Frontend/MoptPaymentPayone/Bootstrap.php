@@ -171,7 +171,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '2.0.1';
+    return '2.0.2';
   }
 
   public function getLabel()
@@ -512,6 +512,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onGetPaymentMeans(Enlight_Hook_HookArgs $arguments)
   {
+
+    $action = $arguments->getSubject()->sSYSTEM->_GET['action'];
+
+    if ($action == 'addArticle' || $action == 'cart' || $action == 'changeQuantity' || $action == 'calculateShippingCosts')
+    {
+      return;
+    }
+
     $ret = $arguments->getReturn();
 
     $firstHit       = 'not_set';
@@ -544,11 +552,13 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     if ($firstHit === 'not_set')
     {
       $arguments->setReturn($ret);
+      return;
     }
 
+    $snippetObject                              = Shopware()->Snippets()->getNamespace('frontend/mopt_payment_payone/labels');
     $ret[$firstHit]['id']                       = 'mopt_payone_creditcard';
     $ret[$firstHit]['name']                     = 'mopt_payone_creditcard';
-    $ret[$firstHit]['description']              = 'Kreditkarte';
+    $ret[$firstHit]['description']              = $snippetObject->get('PaymentMethodCreditCard', 'Kreditkarte', true);
     $ret[$firstHit]['mopt_payone_credit_cards'] = $creditCardData;
 
     $arguments->setReturn($ret);
@@ -588,6 +598,13 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
   public function onGetSelectedPayment(Enlight_Hook_HookArgs $arguments)
   {
+    $action = Shopware()->Modules()->Admin()->sSYSTEM->_GET['action'];
+
+    if ($action == 'addArticle' || $action == 'cart' || $action == 'changeQuantity' || $action == 'calculateShippingCosts')
+    {
+      return;
+    }
+
     $ret    = $arguments->getReturn();
     $userId = Shopware()->Session()->sUserId;
 

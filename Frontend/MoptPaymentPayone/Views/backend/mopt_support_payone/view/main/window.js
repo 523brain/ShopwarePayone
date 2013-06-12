@@ -13,7 +13,7 @@ Ext.define('Shopware.apps.MoptSupportPayone.view.main.Window', {
     layout: 'fit',
     autoShow: true,
     height: '90%',
-    width: 1024,
+    width: 1124,
     stateful: true,
     stateId: 'mopt-support-main-window',
 
@@ -21,7 +21,7 @@ Ext.define('Shopware.apps.MoptSupportPayone.view.main.Window', {
      * Property which represents the iframe "src"-URL
      * @string
      */
-    requestUrl: 'http://www.payone.de/',
+    requestUrl: 'http://www.payone.de/embedded-sites/shopware/information/',
 
     /**
      * Initializes the component and builds up the main interface
