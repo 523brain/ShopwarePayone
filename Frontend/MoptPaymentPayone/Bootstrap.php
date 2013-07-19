@@ -171,7 +171,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '2.0.2';
+    return '2.0.3';
   }
 
   public function getLabel()
@@ -1238,7 +1238,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       return;
     }
 
-    if (preg_match('#mopt_payone__cc#', $user['additional']['payment']['id']))
+    if (preg_match('#mopt_payone__cc#', $user['additional']['payment']['name']))
     {
       $returnValues['paymentID'] = $user['additional']['payment']['id'];
       $arguments->setReturn($returnValues);
@@ -1507,7 +1507,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'description'           => $paymentMethod['description'],
             'template'              => $paymentMethod['template'],
             'action'                => 'mopt_payment_payone',
-            'active'                => 1,
+            'active'                => 0,
             'position'              => $paymentMethod['position'],
             'additionalDescription' => 'Pay save and secured through our payment service.',
         ));
