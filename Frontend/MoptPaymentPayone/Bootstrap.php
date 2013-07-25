@@ -171,7 +171,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '2.0.3';
+    return '2.0.4';
   }
 
   public function getLabel()
@@ -512,10 +512,15 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onGetPaymentMeans(Enlight_Hook_HookArgs $arguments)
   {
+    $action        = $arguments->getSubject()->sSYSTEM->_GET['action'];
+    $sTargetAction = $arguments->getSubject()->sSYSTEM->_GET['sTargetAction'];
 
-    $action = $arguments->getSubject()->sSYSTEM->_GET['action'];
+    if ($action == 'addArticle' || $action == 'cart' || $action == 'changeQuantity')
+    {
+      return;
+    }
 
-    if ($action == 'addArticle' || $action == 'cart' || $action == 'changeQuantity' || $action == 'calculateShippingCosts')
+    if ($action == 'calculateShippingCosts' && $sTargetAction == 'cart')
     {
       return;
     }
@@ -598,9 +603,15 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
   public function onGetSelectedPayment(Enlight_Hook_HookArgs $arguments)
   {
-    $action = Shopware()->Modules()->Admin()->sSYSTEM->_GET['action'];
+    $action        = Shopware()->Modules()->Admin()->sSYSTEM->_GET['action'];
+    $sTargetAction = Shopware()->Modules()->Admin()->sSYSTEM->_GET['sTargetAction'];
 
-    if ($action == 'addArticle' || $action == 'cart' || $action == 'changeQuantity' || $action == 'calculateShippingCosts')
+    if ($action == 'addArticle' || $action == 'cart' || $action == 'changeQuantity')
+    {
+      return;
+    }
+
+    if ($action == 'calculateShippingCosts' && $sTargetAction == 'cart')
     {
       return;
     }
@@ -618,7 +629,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     {
       $ret['id'] = 'mopt_payone_creditcard';
     }
-
+    
     $arguments->setReturn($ret);
   }
 

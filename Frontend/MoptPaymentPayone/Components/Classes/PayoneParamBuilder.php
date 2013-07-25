@@ -256,7 +256,7 @@ class Mopt_PayoneParamBuilder
     $params['country']         = $userData['additional']['country']['countryiso'];
     $params['email']           = $userData['additional']['user']['email'];
     $params['telephonenumber'] = $billingAddress['phone'];
-    $params['language']        = strtolower($userData['additional']['country']['countryiso']);
+    $params['language']        = $this->getLanguageFromCountryId($userData['additional']['country']['id']);
     $params['ustid']           = $billingAddress['firstname'];
 
     if (!isset($_SERVER['HTTP_X_FORWARDED_FOR']))
@@ -717,8 +717,14 @@ class Mopt_PayoneParamBuilder
   {
     $sql      = 'SELECT `countryiso` FROM s_core_countries WHERE id = ' . $id;
     $language = Shopware()->Db()->fetchOne($sql);
+    $language = strtolower($language);
 
-    return strtolower($language);
+    if ($language == 'at' || $language == 'ch')
+    {
+      $language = 'de';
+    }
+
+    return $language;
   }
 
   /**

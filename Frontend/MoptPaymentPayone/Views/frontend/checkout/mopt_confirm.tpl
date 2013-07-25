@@ -53,6 +53,7 @@
       }
       else
       {
+        $('#basketButton').attr('disabled','disabled');
         return true;
       }
     });

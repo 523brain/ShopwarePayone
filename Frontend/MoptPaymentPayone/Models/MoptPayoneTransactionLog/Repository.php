@@ -29,7 +29,14 @@ class Repository extends ModelRepository
     $transactionLog = new \Shopware\CustomModels\MoptPayoneTransactionLog\MoptPayoneTransactionLog();
 
     $transactionLog->setStatus($request->getTxaction());
-    $transactionLog->setLiveMode($request->getMode());
+    if ($request->getMode() == 'live')
+    {
+      $transactionLog->setLiveMode(true);
+    }
+    else
+    {
+      $transactionLog->setLiveMode(false);
+    }
     $transactionLog->setPortalId($request->getPortalid());
     $transactionLog->setCreationDate(date('Y-m-d\TH:i:sP'));
     $transactionLog->setUpdateDate(date('Y-m-d\TH:i:sP'));

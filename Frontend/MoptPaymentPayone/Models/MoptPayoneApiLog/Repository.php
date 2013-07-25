@@ -37,7 +37,14 @@ class Repository extends ModelRepository
     {
       $apiLog->setRequest($request->getRequest());
       $apiLog->setResponse($response->getStatus());
-      $apiLog->setLiveMode($request->getMode());
+      if ($request->getMode() == 'live')
+      {
+        $apiLog->setLiveMode(true);
+      }
+      else
+      {
+        $apiLog->setLiveMode(false);
+      }
       $apiLog->setMerchantId($request->getMid());
       $apiLog->setPortalId($request->getPortalid());
       $apiLog->setCreationDate(date('Y-m-d\TH:i:sP'));

@@ -302,7 +302,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   public function successAction()
   {
     $session = Shopware()->Session();
-    $this->mopt_payone_saveOrder($session->txId, $session->paymentReference);
+    $this->forward('finishOrder', 'MoptPaymentPayone', null, array('txid' => $session->txId, 'hash' => $session->paymentReference));
   }
 
   /**
@@ -352,10 +352,13 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
    * @param type $hash
    * @return type 
    */
-  protected function mopt_payone_saveOrder($txId, $hash)
+  public function finishOrderAction()
   {
-    $orderNr = $this->saveOrder($txId, $hash);
+    $txId    = $this->Request()->getParam('txid');
+    $hash    = $this->Request()->getParam('hash');
     $session = Shopware()->Session();
+
+    $orderNr = $this->saveOrder($txId, $hash);
 
     if ($session->moptClearingData)
     {
@@ -382,7 +385,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     unset($session->moptIsAuthorized);
 
-    return $this->forward('finish', 'checkout', null, array('sAGB'      => 1, 'sUniqueID' => $hash));
+    $this->redirect(array('controller' => 'checkout', 'action'     => 'finish', 'sUniqueID'  => $hash));
   }
 
   /**
@@ -411,7 +414,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
       }
 
       //save order
-      $this->mopt_payone_saveOrder($response->getTxid(), $session->paymentReference);
+      $this->forward('finishOrder', 'MoptPaymentPayone', null, array('txid' => $response->getTxid(), 'hash' => $session->paymentReference));
     }
   }
 
