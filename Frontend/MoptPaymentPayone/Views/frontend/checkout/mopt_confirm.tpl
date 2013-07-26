@@ -32,7 +32,7 @@
     var orgValue = myRadio.filter('[checked="checked"]').val();
     var orgLabel = $('input[name="register[payment]"]:checked + label').text();
     
-    $('#basketButton').bind('click', function() {
+    $('#basketButton').closest('form').submit(function() {
       // get orginal checked payment method
       var checkedValue = myRadio.filter(':checked').val();
       var checkedLabel = $('input[name="register[payment]"]:checked + label').text();
