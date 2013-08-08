@@ -258,17 +258,7 @@ class Mopt_PayoneParamBuilder
     $params['telephonenumber'] = $billingAddress['phone'];
     $params['language']        = $this->getLanguageFromCountryId($userData['additional']['country']['id']);
     $params['ustid']           = $billingAddress['firstname'];
-
-    if (!isset($_SERVER['HTTP_X_FORWARDED_FOR']))
-    {
-      $clientIP = $_SERVER['REMOTE_ADDR'];
-    }
-    else
-    {
-      $clientIP     = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    }
-    $params['ip'] = $clientIP;
-
+    $params['ip']              = $_SERVER['REMOTE_ADDR'];
 
     $personalData = new Payone_Api_Request_Parameter_Authorization_PersonalData($params);
 
@@ -719,9 +709,13 @@ class Mopt_PayoneParamBuilder
     $language = Shopware()->Db()->fetchOne($sql);
     $language = strtolower($language);
 
-    if ($language == 'at' || $language == 'ch')
+    if ($language == 'at' || $language == 'ch' || $language == 'de')
     {
       $language = 'de';
+    }
+    else
+    {
+      $language = 'en';
     }
 
     return $language;

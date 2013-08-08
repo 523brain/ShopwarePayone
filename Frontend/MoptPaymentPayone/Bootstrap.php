@@ -171,7 +171,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '2.0.4';
+    return '2.0.5';
   }
 
   public function getLabel()
@@ -2146,7 +2146,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $payoneParams             = $moptPayoneMain->getParamBuilder()->buildAuthorize();
     $payoneParams['aid']      = $config['subaccountId'];
-    $payoneParams['language'] = 'de'; //@TODO get language
+    $payoneParams['language'] = 'de'; //@TODO get language from user
 
     $serviceGenerateHash = $this->Application()->PayoneBuilder()->buildServiceClientApiGenerateHash();
 
@@ -2157,10 +2157,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         'portalid'           => $payoneParams['portalid'],
         'mode'               => $payoneParams['mode'],
         'encoding'           => 'UTF-8',
-        'language'           => 'de', //@TODO get language
-        'solution_version'   => '0.0.1',
+        'language'           => $payoneParams['language'],
+        'solution_version'   => Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap::getVersion(),
         'solution_name'      => 'mediaopt',
-        'integrator_version' => '4.0.5',
+        'integrator_version' => Shopware()->Config()->Version,
         'integrator_name'    => 'Shopware',
         'storecarddata'      => 'yes',
     );

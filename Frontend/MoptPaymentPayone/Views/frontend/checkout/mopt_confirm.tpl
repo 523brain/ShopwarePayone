@@ -21,18 +21,15 @@
 {* Payment selection *}
 {block name='frontend_checkout_confirm_payment' append}
 
-
 <script type="text/javascript">
   $(document).ready(function() {
-    // Handler for .ready() called.
-    
     $('[name="register[payment]"]').removeClass('auto_submit');
     
     var myRadio =  $('input[name="register[payment]"]');
     var orgValue = myRadio.filter('[checked="checked"]').val();
     var orgLabel = $('input[name="register[payment]"]:checked + label').text();
     
-    $('#basketButton').closest('form').submit(function() {
+    $('#basketButton').parents('form:first').bind('submit', function() {
       // get orginal checked payment method
       var checkedValue = myRadio.filter(':checked').val();
       var checkedLabel = $('input[name="register[payment]"]:checked + label').text();
@@ -60,6 +57,5 @@
     
   });
 </script>
-
 
 {/block}

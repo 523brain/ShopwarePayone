@@ -34,6 +34,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       }
       $payment     = $order->getPayment();
       $paymentName = $payment->getName();
+      $config = Mopt_PayoneMain::getInstance()->getPayoneConfig($payment->getId());
 
       //positions ?
       $positionIds = $request->get('positionIds') ? json_decode($request->get('positionIds')) : array();
@@ -41,7 +42,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       //fetch params
       $params = $this->moptPayone__main->getParamBuilder()->buildOrderDebit($order, $positionIds);
 
-      if (preg_match('#mopt_payone__fin_billsafe#', $paymentName))
+      if ($config['submitBasket'] || preg_match('#mopt_payone__fin_billsafe#', $paymentName))
       {
         $invoicing = $this->moptPayone__main->getParamBuilder()->getInvoicingFromOrder($order, $positionIds, 'skipCaptureMode', true);
       }
@@ -94,6 +95,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
 
       $payment     = $order->getPayment();
       $paymentName = $payment->getName();
+      $config = Mopt_PayoneMain::getInstance()->getPayoneConfig($payment->getId());
 
       //positions ?
       $positionIds = $request->get('positionIds') ? json_decode($request->get('positionIds')) : array();
@@ -104,7 +106,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       //fetch params
       $params = $this->moptPayone__main->getParamBuilder()->buildOrderCapture($order, $positionIds, $finalize);
 
-      if (preg_match('#mopt_payone__fin_billsafe#', $paymentName))
+      if ($config['submitBasket'] || preg_match('#mopt_payone__fin_billsafe#', $paymentName))
       {
         $invoicing = $this->moptPayone__main->getParamBuilder()->getInvoicingFromOrder($order, $positionIds, $finalize);
       }
