@@ -171,7 +171,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '2.0.5';
+    return '2.0.6';
   }
 
   public function getLabel()
@@ -855,12 +855,19 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             case 1: // reenter address -> redirect to address form
               {
                 $ret['sErrorFlag']['mopt_payone_configured_message']     = true;
-                $ret['sErrorFlag']['mopt_payone_addresscheck']           = true;
                 $ret['sErrorMessages']['mopt_payone_configured_message'] = $config['adresscheckFailureMessage'];
-                $ret['sErrorMessages']['mopt_payone_addresscheck']       = utf8_encode($response->getCustomermessage());
-                $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
-                $arguments->setReturn($ret);
-                return;
+                if(Shopware()->Modules()->Admin()->sCheckUser())
+                  {
+                  $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
+                  $arguments->setReturn($ret);
+                  return;
+                  }
+                else
+                {
+                  $this->forward($request, 'index', 'register', null, array('sTarget' => 'checkout'));
+                  $arguments->setReturn($ret);
+                  return;
+                }
               }
               break;
             case 2: // perform consumerscore check
@@ -1010,8 +1017,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       }
       if ($response->getStatus() == 'INVALID' || $response->getStatus() == 'ERROR')
       {
-        $returnValues['sErrorFlag']['mopt_payone_addresscheck']     = true;
-        $returnValues['sErrorMessages']['mopt_payone_addresscheck'] = $response->getCustomermessage();
+        $returnValues['sErrorFlag']['mopt_payone_configured_message']     = true;
+        $returnValues['sErrorMessages']['mopt_payone_configured_message'] = $config['adresscheckFailureMessage'];
 
         $request = $this->Application()->Front()->Request(); // used to forward user
         $session->moptPayoneShippingAddresscheckResult = serialize($response);
