@@ -1167,7 +1167,7 @@ class Mopt_PayoneHelper
             . "'4', "
             . "'0', "
             . "'0', "
-            . "'19',"
+            . $db->quote(round(($order->getInvoiceShipping() / $order->getInvoiceShippingNet() - 1) * 100)) . ","
             . " '');";
     $db->exec($sql);
 
