@@ -1172,9 +1172,11 @@ class Mopt_PayoneHelper
     $db->exec($sql);
 
 
-    //set invoiceshipping 2 zero
+    // Set shipping details to zero since these informations are stored within the basket
+    // of the corresponding order.
     $sql = "UPDATE s_order
-                  SET invoice_shipping = 0
+                  SET invoice_shipping = 0,
+                    invoice_shipping_net = 0
                   WHERE id = " . $db->quote($order->getId());
     $db->exec($sql);
   }
