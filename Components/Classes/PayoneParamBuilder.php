@@ -242,8 +242,8 @@ class Mopt_PayoneParamBuilder
   {
     $params                = $this->getAuthParameters($paymentId);
     $params['checktype']   = $checkType;
-    $params['bankaccount'] = $bankData['mopt_payone__debit_bankaccount'];
-    $params['bankcode']    = $bankData['mopt_payone__debit_bankcode'];
+    $params['bankaccount'] = $this->removeWhitespaces($bankData['mopt_payone__debit_bankaccount']);
+    $params['bankcode']    = $this->removeWhitespaces($bankData['mopt_payone__debit_bankcode']);
     $params['bankcountry'] = $bankData['mopt_payone__debit_bankcountry'];
     $params['language']    = $this->getLanguageFromActiveShop();
 
@@ -358,11 +358,11 @@ class Mopt_PayoneParamBuilder
     $params = array();
 
     $params['bankcountry']            = $paymentData['mopt_payone__debit_bankcountry'];
-    $params['bankaccount']            = $paymentData['mopt_payone__debit_bankaccount'];
-    $params['bankcode']               = $paymentData['mopt_payone__debit_bankcode'];
+    $params['bankaccount']            = $this->removeWhitespaces($paymentData['mopt_payone__debit_bankaccount']);
+    $params['bankcode']               = $this->removeWhitespaces($paymentData['mopt_payone__debit_bankcode']);
     $params['bankaccountholder']      = $paymentData['mopt_payone__debit_bankaccountholder'];
-    $params['iban']                   = $paymentData['mopt_payone__debit_iban'];
-    $params['bic']                    = $paymentData['mopt_payone__debit_bic'];
+    $params['iban']                   = $this->removeWhitespaces($paymentData['mopt_payone__debit_iban']);
+    $params['bic']                    = $this->removeWhitespaces($paymentData['mopt_payone__debit_bic']);
     if(Shopware()->Session()->moptMandateData)
     {
       $params['mandate_identification'] = Shopware()->Session()->moptMandateData['mopt_payone__mandateIdentification'];
@@ -386,10 +386,10 @@ class Mopt_PayoneParamBuilder
     {
       $params['onlinebanktransfertype'] = 'PNT';
       $params['bankcountry']            = $paymentData['mopt_payone__sofort_bankcountry'];
-      $params['iban']                   = $paymentData['mopt_payone__sofort_iban'];
-      $params['bic']                    = $paymentData['mopt_payone__sofort_bic'];
-      $params['bankaccount']            = $paymentData['mopt_payone__sofort_bankaccount'];
-      $params['bankcode']               = $paymentData['mopt_payone__sofort_bankcode'];
+      $params['iban']                   = $this->removeWhitespaces($paymentData['mopt_payone__sofort_iban']);
+      $params['bic']                    = $this->removeWhitespaces($paymentData['mopt_payone__sofort_bic']);
+      $params['bankaccount']            = $this->removeWhitespaces($paymentData['mopt_payone__sofort_bankaccount']);
+      $params['bankcode']               = $this->removeWhitespaces($paymentData['mopt_payone__sofort_bankcode']);
       $params['successurl']             = $router->assemble(array('action' => 'success', 
           'forceSecure' => true, 'appendSession' => true));
       $params['errorurl']               = $router->assemble(array('action' => 'failure', 
@@ -402,8 +402,8 @@ class Mopt_PayoneParamBuilder
     {
       $params['onlinebanktransfertype'] = 'GPY';
       $params['bankcountry']            = $paymentData['mopt_payone__giropay_bankcountry'];
-      $params['iban']                   = $paymentData['mopt_payone__giropay_iban'];
-      $params['bic']                    = $paymentData['mopt_payone__giropay_bic'];
+      $params['iban']                   = $this->removeWhitespaces($paymentData['mopt_payone__giropay_iban']);
+      $params['bic']                    = $this->removeWhitespaces($paymentData['mopt_payone__giropay_bic']);
       $params['successurl']             = $router->assemble(array('action' => 'success', 
           'forceSecure' => true, 'appendSession' => false));
       $params['errorurl']               = $router->assemble(array('action' => 'failure', 
@@ -932,5 +932,15 @@ class Mopt_PayoneParamBuilder
     $params['file_format']    = 'PDF';
 
     return $params;
+  }
+
+  /**
+   * Remove whitespaces from input string
+   *
+   * @return string without whitespaces
+   */
+  private function removeWhitespaces($input)
+  {
+    return preg_replace('/\s+/', '', $input);
   }
 }
