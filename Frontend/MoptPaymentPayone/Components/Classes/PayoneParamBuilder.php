@@ -243,8 +243,8 @@ class Mopt_PayoneParamBuilder
 
     $params                = array_merge($params, $this->getAuthParameters($paymentId));
     $params['checktype']   = $checkType;
-    $params['bankaccount'] = $bankData['mopt_payone__debit_bankaccount'];
-    $params['bankcode']    = $bankData['mopt_payone__debit_bankcode'];
+    $params['bankaccount'] = $this->removeWhitespaces($bankData['mopt_payone__debit_bankaccount']);
+    $params['bankcode']    = $this->removeWhitespaces($bankData['mopt_payone__debit_bankcode']);
     $params['bankcountry'] = $bankData['mopt_payone__debit_bankcountry'];
     $params['language']    = $this->getLanguageFromCountryId($languageId);
     ;
@@ -345,8 +345,8 @@ class Mopt_PayoneParamBuilder
     $params = array();
 
     $params['bankcountry']       = $paymentData['mopt_payone__debit_bankcountry']; //DE, AT, NL
-    $params['bankaccount']       = $paymentData['mopt_payone__debit_bankaccount'];
-    $params['bankcode']          = $paymentData['mopt_payone__debit_bankcode'];
+    $params['bankaccount']       = $this->removeWhitespaces($paymentData['mopt_payone__debit_bankaccount']);
+    $params['bankcode']          = $this->removeWhitespaces($paymentData['mopt_payone__debit_bankcode']);
     $params['bankaccountholder'] = $paymentData['mopt_payone__debit_bankaccountholder']; //optional
 
     $payment = new Payone_Api_Request_Parameter_Authorization_PaymentMethod_DebitPayment($params);
@@ -368,8 +368,8 @@ class Mopt_PayoneParamBuilder
     {
       $params['onlinebanktransfertype'] = 'PNT';
       $params['bankcountry']            = $paymentData['mopt_payone__sofort_bankcountry']; //DE, AT, NL
-      $params['bankaccount']            = $paymentData['mopt_payone__sofort_bankaccount'];
-      $params['bankcode']               = $paymentData['mopt_payone__sofort_bankcode'];
+      $params['bankaccount']            = $this->removeWhitespaces($paymentData['mopt_payone__sofort_bankaccount']);
+      $params['bankcode']               = $this->removeWhitespaces($paymentData['mopt_payone__sofort_bankcode']);
       $params['successurl']             = $router->assemble(array('action'            => 'success', 'forceSecure'       => true, 'appendSession'     => true));
       $params['errorurl'] = $router->assemble(array('action'           => 'failure', 'forceSecure'      => true, 'appendSession'    => true));
       $params['backurl'] = $router->assemble(array('action'        => 'cancel', 'forceSecure'   => true, 'appendSession' => true));
@@ -379,8 +379,8 @@ class Mopt_PayoneParamBuilder
     {
       $params['onlinebanktransfertype'] = 'GPY';
       $params['bankcountry']            = $paymentData['mopt_payone__giropay_bankcountry']; //DE, AT, NL
-      $params['bankaccount']            = $paymentData['mopt_payone__giropay_bankaccount'];
-      $params['bankcode']               = $paymentData['mopt_payone__giropay_bankcode'];
+      $params['bankaccount']            = $this->removeWhitespaces($paymentData['mopt_payone__giropay_bankaccount']);
+      $params['bankcode']               = $this->removeWhitespaces($paymentData['mopt_payone__giropay_bankcode']);
       $params['successurl']             = $router->assemble(array('action'            => 'success', 'forceSecure'       => true, 'appendSession'     => false));
       $params['errorurl'] = $router->assemble(array('action'           => 'failure', 'forceSecure'      => true, 'appendSession'    => false));
       $params['backurl'] = $router->assemble(array('action'        => 'cancel', 'forceSecure'   => true, 'appendSession' => false));
@@ -389,7 +389,7 @@ class Mopt_PayoneParamBuilder
     if ($paymentData['mopt_payone__onlinebanktransfertype'] == 'EPS')
     {
       $params['onlinebanktransfertype'] = 'EPS';
-      $params['bankcountry']            = $paymentData['mopt_payone__eps_bankcountry'];
+      $params['bankcountry']            = $this->removeWhitespaces($paymentData['mopt_payone__eps_bankcountry']);
       $params['bankgrouptype']          = $paymentData['mopt_payone__eps_bankgrouptype'];
       $params['successurl']             = $router->assemble(array('action'            => 'success', 'forceSecure'       => true, 'appendSession'     => false));
       $params['errorurl'] = $router->assemble(array('action'           => 'failure', 'forceSecure'      => true, 'appendSession'    => false));
@@ -776,6 +776,16 @@ class Mopt_PayoneParamBuilder
   public function getParamPaymentReference()
   {
     return 'mopt_' . uniqid() . rand(10, 99);
+  }
+
+  /**
+   * Remove whitespaces from input string
+   *
+   * @return string without whitespaces
+   */
+  private function removeWhitespaces($input)
+  {
+    return preg_replace('/\s+/', '', $input);
   }
 
 }
