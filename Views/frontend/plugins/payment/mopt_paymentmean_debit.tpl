@@ -113,10 +113,12 @@
 });
  
  function moptValidateAndSaveDebit{$payment_mean.id}() {
-    var ibanbicReg =  /^[A-Z0-9]+$/;
-    var numberReg =  /^[0-9]+$/;
-    var bankCodeReg = /^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/;
+    {literal}
+    var ibanbicReg =  /^[A-Z0-9 ]+$/;
+    var numberReg =  /^[0-9 ]+$/;
+    var bankCodeReg = /^(?:\s*[0-9]\s*){8}$/;
     var formNotValid = false;
+    {/literal}
 
     $(".moptFormError").remove();
     
