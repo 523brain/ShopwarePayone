@@ -91,7 +91,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     
     if($action)
     {
-        return $this->redirect(array('action' => $action, 'forceSecure' => true));
+        return $this->redirect(array('action' => $action, 'forceSecure' => true, 'appendSession' => true));
     }
     else
     {
