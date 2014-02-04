@@ -75,37 +75,37 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     if ($this->moptPayonePaymentHelper->isPayoneCreditcard($paymentShortName))
     {
-      return $this->redirect(array('action'      => 'creditcard', 'forceSecure' => true));
+      return $this->redirect(array('action'      => 'creditcard', 'forceSecure' => true, 'appendSession' => true));
     }
 
     if ($this->moptPayonePaymentHelper->isPayoneInstantBankTransfer($paymentShortName))
     {
-      return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
+      return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true, 'appendSession' => true));
     }
 
     if ($this->moptPayonePaymentHelper->isPayonePaypal($paymentShortName))
     {
-      return $this->redirect(array('action'      => 'paypal', 'forceSecure' => true));
+      return $this->redirect(array('action'      => 'paypal', 'forceSecure' => true, 'appendSession' => true));
     }
 
     if ($this->moptPayonePaymentHelper->isPayoneDebitnote($paymentShortName))
     {
-      return $this->redirect(array('action'      => 'debitnote', 'forceSecure' => true));
+      return $this->redirect(array('action'      => 'debitnote', 'forceSecure' => true, 'appendSession' => true));
     }
 
     if ($this->moptPayonePaymentHelper->isPayoneInvoice($paymentShortName) || $this->moptPayonePaymentHelper->isPayonePayInAdvance($paymentShortName))
     {
-      return $this->redirect(array('action'      => 'standard', 'forceSecure' => true));
+      return $this->redirect(array('action'      => 'standard', 'forceSecure' => true, 'appendSession' => true));
     }
 
     if ($this->moptPayonePaymentHelper->isPayoneCashOnDelivery($paymentShortName))
     {
-      return $this->redirect(array('action'      => 'cashondel', 'forceSecure' => true));
+      return $this->redirect(array('action'      => 'cashondel', 'forceSecure' => true, 'appendSession' => true));
     }
 
     if ($this->moptPayonePaymentHelper->isPayoneFinance($paymentShortName))
     {
-      return $this->redirect(array('action'      => 'finance', 'forceSecure' => true));
+      return $this->redirect(array('action'      => 'finance', 'forceSecure' => true, 'appendSession' => true));
     }
 
     return $this->redirect(array('controller' => 'checkout'));
