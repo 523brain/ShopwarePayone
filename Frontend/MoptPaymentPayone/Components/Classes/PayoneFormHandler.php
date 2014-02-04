@@ -11,39 +11,42 @@ class Mopt_PayoneFormHandler
    *
    * @param string $paymentId
    * @param array $formData
-   * @return atray 
+   * @param Mopt_PayonePaymentHelper $paymentHelper
+   * @return array payment data 
    */
-  public function processPaymentForm($paymentId, $formData)
+  public function processPaymentForm($paymentId, $formData, $paymentHelper)
   {
-    $paymentData = array();
-    switch ($paymentId)
+    if ($paymentHelper->isPayoneCreditcard($paymentId))
     {
-      case 'mopt_payone__ibt_sofortueberweisung':
-        $paymentData = $this->proccessSofortueberweisung($formData);
-        break;
-      case 'mopt_payone__ibt_giropay':
-        $paymentData = $this->proccessGiropay($formData);
-        break;
-      case 'mopt_payone__ibt_eps':
-        $paymentData = $this->proccessEps($formData);
-        break;
-      case 'mopt_payone__ibt_ideal':
-        $paymentData = $this->proccessIdeal($formData);
-        break;
-      case 'mopt_payone__acc_debitnote':
-        $paymentData = $this->proccessDebitNote($formData);
-        break;
-      case 'mopt_payone_creditcard':
-        $paymentData = $this->proccessCreditCard($formData);
-        break;
+      return $this->proccessCreditCard($formData);
     }
 
-    if (preg_match('#mopt_payone__cc#', $paymentId))
+    if ($paymentHelper->isPayoneSofortuerberweisung($paymentId))
     {
-      $paymentData = $this->proccessCreditCard($formData);
+      return $this->proccessSofortueberweisung($formData);
     }
 
-    return $paymentData;
+    if ($paymentHelper->isPayoneGiropay($paymentId))
+    {
+      return $this->proccessGiropay($formData);
+    }
+
+    if ($paymentHelper->isPayoneEPS($paymentId))
+    {
+      return $this->proccessEps($formData);
+    }
+
+    if ($paymentHelper->isPayoneIDeal($paymentId))
+    {
+      return $this->proccessIdeal($formData);
+    }
+
+    if ($paymentHelper->isPayoneDebitnote($paymentId))
+    {
+      return $this->proccessDebitNote($formData);
+    }
+
+    return array();
   }
 
   /**
@@ -86,7 +89,7 @@ class Mopt_PayoneFormHandler
       return $paymentData;
     }
 
-    $paymentData['formData']['onlinebanktransfertype'] = 'PNT';
+    $paymentData['formData']['onlinebanktransfertype'] = Payone_Api_Enum_OnlinebanktransferType::INSTANT_MONEY_TRANSFER;
 
     return $paymentData;
   }
@@ -123,7 +126,7 @@ class Mopt_PayoneFormHandler
       return $paymentData;
     }
 
-    $paymentData['formData']['onlinebanktransfertype']           = 'GPY';
+    $paymentData['formData']['onlinebanktransfertype']           = Payone_Api_Enum_OnlinebanktransferType::GIROPAY;
     $paymentData['formData']['mopt_payone__giropay_bankcountry'] = 'DE';
 
     return $paymentData;
@@ -146,7 +149,7 @@ class Mopt_PayoneFormHandler
     else
     {
       $paymentData['formData']["mopt_payone__eps_bankgrouptype"] = $formData["mopt_payone__eps_bankgrouptype"];
-      $paymentData['formData']['onlinebanktransfertype']         = 'EPS';
+      $paymentData['formData']['onlinebanktransfertype']         = Payone_Api_Enum_OnlinebanktransferType::EPS_ONLINE_BANK_TRANSFER;
       $paymentData['formData']['mopt_payone__eps_bankcountry']   = 'AT';
     }
 
@@ -170,7 +173,7 @@ class Mopt_PayoneFormHandler
     else
     {
       $paymentData['formData']["mopt_payone__ideal_bankgrouptype"] = $formData["mopt_payone__ideal_bankgrouptype"];
-      $paymentData['formData']['onlinebanktransfertype']           = 'EPS';
+      $paymentData['formData']['onlinebanktransfertype']           = Payone_Api_Enum_OnlinebanktransferType::IDEAL;
       $paymentData['formData']['mopt_payone__ideal_bankcountry']   = 'NL';
     }
 

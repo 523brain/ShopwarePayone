@@ -11,9 +11,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
   /**
    * PayoneHelper
-   * @var MoptPayoneHelper
+   * @var Mopt_PayoneInstallHelper
    */
-  protected $helper = null;
+  protected $moptPayoneInstallHelper = null;
 
   /**
    * The afterInit function registers the custom plugin models.
@@ -21,6 +21,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   public function afterInit()
   {
     $this->registerCustomModels();
+    $this->Application()->Loader()->registerNamespace(
+            'Payone', $this->Path() . 'Components/Payone/'
+    );
+    $this->Application()->Loader()->registerNamespace('Mopt', $this->Path() . 'Components/Classes/');
   }
 
   /**
@@ -30,10 +34,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function install()
   {
-    $this->Application()->Loader()->registerNamespace(
-            'Mopt', $this->Path() . 'Components/Classes/'
-    );
-    $this->helper = new Mopt_PayoneHelper();
+    $this->moptPayoneInstallHelper = new Mopt_PayoneInstallHelper();
 
     $this->createEvents();
     $this->createPayments();
@@ -49,7 +50,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    *
    * @return boolean 
    */
-  public function uninstall($deleteModels = false)
+  public function uninstall($deleteModels = false, $removeAttributes = false)
   {
     if ($deleteModels)
     {
@@ -72,6 +73,53 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       );
       $tool->dropSchema($classes);
     }
+
+    if ($removeAttributes)
+    {
+
+      Shopware()->Models()->removeAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_result');
+      Shopware()->Models()->removeAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_date');
+      Shopware()->Models()->removeAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_color');
+      Shopware()->Models()->removeAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_value');
+      // billing adress extension user
+      Shopware()->Models()->removeAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_result');
+      Shopware()->Models()->removeAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_date');
+      Shopware()->Models()->removeAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_personstatus');
+      Shopware()->Models()->removeAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_result');
+      Shopware()->Models()->removeAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_date');
+      Shopware()->Models()->removeAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_color');
+      Shopware()->Models()->removeAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_value');
+      // shipping adress extension
+      Shopware()->Models()->removeAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_result');
+      Shopware()->Models()->removeAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_date');
+      Shopware()->Models()->removeAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_personstatus');
+      Shopware()->Models()->removeAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'consumerscore_color');
+      Shopware()->Models()->removeAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'consumerscore_value');
+      // order extension
+      Shopware()->Models()->removeAttribute('s_order_attributes', 'mopt_payone', 'txid');
+      Shopware()->Models()->removeAttribute('s_order_attributes', 'mopt_payone', 'status');
+      Shopware()->Models()->removeAttribute('s_order_attributes', 'mopt_payone', 'sequencenumber');
+      Shopware()->Models()->removeAttribute('s_order_attributes', 'mopt_payone', 'is_authorized');
+      Shopware()->Models()->removeAttribute('s_order_attributes', 'mopt_payone', 'is_finally_captured'); //settlement for some payment-types
+      Shopware()->Models()->removeAttribute('s_order_attributes', 'mopt_payone', 'clearing_data', 'text'); //clearing data for some payment-types
+      // orderdetails(order articles) extension
+      Shopware()->Models()->removeAttribute('s_order_details_attributes', 'mopt_payone', 'payment_status');
+      Shopware()->Models()->removeAttribute('s_order_details_attributes', 'mopt_payone', 'shipment_date');
+      Shopware()->Models()->removeAttribute('s_order_details_attributes', 'mopt_payone', 'captured');
+      Shopware()->Models()->removeAttribute('s_order_details_attributes', 'mopt_payone', 'debit');
+
+      Shopware()->Models()->generateAttributeModels(
+              array(
+                  's_user_attributes',
+                  's_core_paymentmeans_attributes',
+                  's_user_billingaddress_attributes',
+                  's_user_shippingaddress_attributes',
+                  's_order_attributes',
+                  's_order_details_attributes',
+              )
+      );
+    }
+
     return true;
   }
 
@@ -171,7 +219,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function getVersion()
   {
-    return '2.0.6';
+    return '2.0.9';
   }
 
   public function getLabel()
@@ -273,6 +321,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     // extend backend order-overview
     $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Order', 'moptExtendController_Backend_Order');
 
+    // extend backend payment configuration
+    $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Payment', 'moptExtendController_Backend_Payment');
+
     //add payone fields to list results
     $this->subscribeEvent('Shopware_Controllers_Backend_Order::getList::after', 'Order__getList__after');
 
@@ -317,11 +368,19 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $this->subscribeEvent(
             'Enlight_Controller_Dispatcher_ControllerPath_Backend_MoptPayoneOrder', 'moptRegisterController_Backend_MoptPayoneOrder');
+
+    $this->subscribeEvent(
+            'Enlight_Controller_Dispatcher_ControllerPath_Backend_MoptPayonePayment', 'moptRegisterController_Backend_MoptPayonePayment');
   }
 
   public function moptRegisterController_Backend_MoptPayoneOrder()
   {
     return $this->Path() . 'Controllers/Backend/MoptPayoneOrder.php';
+  }
+
+  public function moptRegisterController_Backend_MoptPayonePayment()
+  {
+    return $this->Path() . 'Controllers/Backend/MoptPayonePayment.php';
   }
 
   public function moptRegisterController_Frontend_MoptShopNotification()
@@ -345,9 +404,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $basket         = $arguments->get('basket');
     $user           = $arguments->get('user');
     $moptPayoneMain = $this->Application()->PayoneMain();
-    $paymentName    = $moptPayoneMain->getHelper()->getPaymentNameFromId($paymentID);
+    $paymentName    = $moptPayoneMain->getPaymentHelper()->getPaymentNameFromId($paymentID);
 
-    if (preg_match('#mopt_payone__#', $paymentName))
+    if ($moptPayoneMain->getPaymentHelper()->isPayonePaymentMethod($paymentName))
     {
       $isPayoneMethod = true;
     }
@@ -529,10 +588,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $firstHit       = 'not_set';
     $creditCardData = array();
+    $moptPayonePaymentHelper = $this->Application()->PayoneMain()->getPaymentHelper();
 
     foreach ($ret as $key => $paymentmean)
     {
-      if (preg_match('#mopt_payone__cc#', $paymentmean['name']))
+      if ($moptPayonePaymentHelper->isPayoneCreditcardNotGrouped($paymentmean['name']))
       {
         if ($firstHit === 'not_set')
         {
@@ -624,12 +684,15 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $ret['data'] = $paymentData;
 
+    //save payment data to session for later use during actual payment process
+    Shopware()->Session()->moptPayment = $paymentData;
+
     //special handling for creditCards
-    if (preg_match('#mopt_payone__cc#', $ret['name']))
+    if ($this->Application()->PayoneMain()->getPaymentHelper()->isPayoneCreditcardNotGrouped($ret['name']))
     {
       $ret['id'] = 'mopt_payone_creditcard';
     }
-    
+
     $arguments->setReturn($ret);
   }
 
@@ -637,7 +700,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   {
     $subject = $arguments->getSubject();
     //return if non payone method is choosen
-    if (!preg_match('#mopt_payone__#', $subject->View()->sPayment['name']))
+    if (!$this->Application()->PayoneMain()->getPaymentHelper()->isPayonePaymentMethod($subject->View()->sPayment['name']))
     {
       return;
     }
@@ -662,8 +725,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $billingAddressChecktype     = false;
     }
     $userBillingAddressCheckData = $moptPayoneMain->getHelper()->getBillingAddresscheckDataFromUserId($userId);
-    if ($billingAddressChecktype
-            && !$moptPayoneMain->getHelper()->isBillingAddressCheckValid($config['adresscheckLifetime'], $userBillingAddressCheckData['moptPayoneAddresscheckResult'], $userBillingAddressCheckData['moptPayoneAddresscheckDate']))
+    if ($billingAddressChecktype && !$moptPayoneMain->getHelper()->isBillingAddressCheckValid($config['adresscheckLifetime'], $userBillingAddressCheckData['moptPayoneAddresscheckResult'], $userBillingAddressCheckData['moptPayoneAddresscheckDate']))
     {
       //perform check
       $params   = $moptPayoneMain->getParamBuilder()->getAddressCheckParams($billingAddressData, $billingAddressData, $paymentId);
@@ -691,8 +753,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $shippingAddressChecktype = false;
     }
 
-    if ($shippingAddressChecktype
-            && !$moptPayoneMain->getHelper()->isShippingAddressCheckValid($config['adresscheckLifetime'], $shippingAttributes['moptPayoneAddresscheckResult'], $shippingAttributes['moptPayoneAddresscheckDate']))
+    if ($shippingAddressChecktype && !$moptPayoneMain->getHelper()->isShippingAddressCheckValid($config['adresscheckLifetime'], $shippingAttributes['moptPayoneAddresscheckResult'], $shippingAttributes['moptPayoneAddresscheckDate']))
     {
       //perform check
       $params   = $moptPayoneMain->getParamBuilder()->getAddressCheckParams($shippingAddressData, $shippingAddressData, $paymentId);
@@ -713,8 +774,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     //check if consumerscore is active and check if necessary
     $cosumerScoreChecktype = $moptPayoneMain->getHelper()->isConsumerScoreToBeCheckedWithBasketValue($config, $basketValue);
     $userConsumerScoreData = $moptPayoneMain->getHelper()->getConsumerScoreDataFromUserId($userId);
-    if ($cosumerScoreChecktype
-            && !$moptPayoneMain->getHelper()->isCosumerScoreCheckValid($config['consumerscoreLifetime'], $userConsumerScoreData['moptPayoneConsumerscoreResult'], $userConsumerScoreData['moptPayoneConsumerscoreDate']))
+    if ($cosumerScoreChecktype && !$moptPayoneMain->getHelper()->isCosumerScoreCheckValid($config['consumerscoreLifetime'], $userConsumerScoreData['moptPayoneConsumerscoreResult'], $userConsumerScoreData['moptPayoneConsumerscoreDate']))
     {
 
       //perform check if prechoice is configured
@@ -798,7 +858,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         if ($response->getStatus() == 'VALID')
         {
           $session   = Shopware()->Session();
-          $secStatus = $response->getSecstatus();
+          $secStatus = (int) $response->getSecstatus();
           //check secstatus and config
           if ($secStatus == 10)
           {
@@ -812,10 +872,13 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             {
               case 0: //auto correction
                 {
+                  //this works only for address changes via account controller
                   Shopware()->Modules()->Admin()->sSYSTEM->_POST['street'] = $response->getStreetname();
                   Shopware()->Modules()->Admin()->sSYSTEM->_POST['streetnumber'] = $response->getStreetnumber();
                   Shopware()->Modules()->Admin()->sSYSTEM->_POST['zipcode'] = $response->getZip();
                   Shopware()->Modules()->Admin()->sSYSTEM->_POST['city'] = $response->getCity();
+
+                  $session->moptPayoneBillingAddresscheckResult = serialize($response);
                 }
                 break;
               case 1: // no correction
@@ -856,12 +919,12 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
               {
                 $ret['sErrorFlag']['mopt_payone_configured_message']     = true;
                 $ret['sErrorMessages']['mopt_payone_configured_message'] = $config['adresscheckFailureMessage'];
-                if(Shopware()->Modules()->Admin()->sCheckUser())
-                  {
+                if (Shopware()->Modules()->Admin()->sCheckUser())
+                {
                   $this->forward($request, 'billing', 'account', null, array('sTarget' => 'checkout'));
                   $arguments->setReturn($ret);
                   return;
-                  }
+                }
                 else
                 {
                   $this->forward($request, 'index', 'register', null, array('sTarget' => 'checkout'));
@@ -916,12 +979,19 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $moptPayoneMain = $this->Application()->PayoneMain();
     $config         = $moptPayoneMain->getPayoneConfig();
 
-    if ($result->getStatus() == 'INVALID' || $result->getStatus() == 'ERROR')
+    if ($result->getStatus() === 'INVALID' || $result->getStatus() === 'ERROR')
     {
       $moptPayoneMain->getHelper()->saveBillingAddressError($userId, $result);
     }
     else
     {
+      if ($result->getStatus() === 'VALID'
+              && $result->getSecstatus() === '20'
+              && $config['adresscheckAutomaticCorrection'] === 0
+              && Shopware()->Modules()->Admin()->sSYSTEM->_GET['action'] === 'saveRegister')
+      {
+        $moptPayoneMain->getHelper()->saveCorrectedBillingAddress($userId, $result);
+      }
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringValue($result->getPersonstatus(), $config);
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
       $moptPayoneMain->getHelper()->saveBillingAddressCheckResult($userId, $result, $mappedPersonStatus);
@@ -975,7 +1045,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
       if ($response->getStatus() == 'VALID')
       {
-        $secStatus = $response->getSecstatus();
+        $secStatus = (int) $response->getSecstatus();
         if ($secStatus == 10)
         {
           //valid address returned, save result to session
@@ -1097,6 +1167,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     }
     else
     {
+      if ($result->getStatus() === 'VALID'
+              && $result->getSecstatus() === '20'
+              && $config['adresscheckAutomaticCorrection'] === 0
+              && Shopware()->Modules()->Admin()->sSYSTEM->_GET['action'] === 'saveRegister')
+      {
+        $moptPayoneMain->getHelper()->saveCorrectedShippingAddress($userId, $result);
+      }
+
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringValue($result->getPersonstatus(), $config);
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
       $moptPayoneMain->getHelper()->saveShippingAddressCheckResult($userId, $result, $mappedPersonStatus);
@@ -1126,10 +1204,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $paymentId                    = $returnValues['paymentData']['name'];
     $moptPayoneMain               = $this->Application()->PayoneMain();
 
-    //check if pay1 method, exit if not and delete pament data 
-    if (!preg_match('#mopt_payone__#', $paymentId))
+    //check if payone payment method, exit if not and delete pament data 
+    if (!$moptPayoneMain->getPaymentHelper()->isPayonePaymentMethod($paymentId))
     {
-      $moptPayoneMain->getHelper()->deletePaymentData($userId);
+      $moptPayoneMain->getPaymentHelper()->deletePaymentData($userId);
       return;
     }
 
@@ -1139,7 +1217,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $paymentId = $postData['register']['payment'];
     }
 
-    $paymentData = $moptPayoneMain->getFormHandler()->processPaymentForm($paymentId, $post);
+    $paymentData = $moptPayoneMain->getFormHandler()->processPaymentForm($paymentId, $post, $moptPayoneMain->getPaymentHelper());
 
     if (count($paymentData['sErrorFlag']))
     {
@@ -1161,7 +1239,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       $userData        = $user['additional']['user'];
       $billingFormData = $user['billingaddress'];
 
-      if ($returnValues['paymentData']['name'] === 'mopt_payone__acc_debitnote')
+      if ($moptPayoneMain->getPaymentHelper()->isPayoneDebitnote($returnValues['paymentData']['name']))
       {
         //check if bankaccountcheck is enabled 
         $bankAccountChecktype = $moptPayoneMain->getHelper()->getBankAccountCheckType($config);
@@ -1218,7 +1296,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
       //save data to table and session
       Shopware()->Session()->moptPayment = $post;
-      $moptPayoneMain->getHelper()->savePaymentData($userId, $paymentData);
+      $moptPayoneMain->getPaymentHelper()->savePaymentData($userId, $paymentData);
     }
 
     $arguments->setReturn($returnValues);
@@ -1256,7 +1334,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       return;
     }
 
-    if (preg_match('#mopt_payone__cc#', $user['additional']['payment']['name']))
+    if ($this->Application()->PayoneMain()->getPaymentHelper()->isPayoneCreditcardNotGrouped($user['additional']['payment']['name']))
     {
       $returnValues['paymentID'] = $user['additional']['payment']['id'];
       $arguments->setReturn($returnValues);
@@ -1289,7 +1367,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
     $request = new Payone_Api_Request_Consumerscore($params);
 
-    $billingAddressChecktype = 'NO';
+    $billingAddressChecktype = Payone_Api_Enum_AddressCheckType::NONE;
     $request->setAddresschecktype($billingAddressChecktype);
     $request->setConsumerscoretype($config['consumerscoreCheckMode']);
 
@@ -1302,13 +1380,13 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $ret = array();
     $moptPayoneMain = $this->Application()->PayoneMain();
 
-    if ($response->getStatus() == 'VALID')
+    if ($response->getStatus() == Payone_Api_Enum_ResponseType::VALID)
     {
-      $secStatus          = $response->getSecstatus();
+      $secStatus          = (int) $response->getSecstatus();
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringValue($response->getPersonstatus(), $config);
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
       //check secstatus and config
-      if ($secStatus == 10)
+      if ($secStatus == Payone_Api_Enum_AddressCheckSecstatus::ADDRESS_CORRECT)
       {
         //valid address returned -> save result to db
         $moptPayoneMain->getHelper()->saveBillingAddressCheckResult($userId, $response, $mappedPersonStatus);
@@ -1379,13 +1457,13 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   {
     $ret = array();
     $moptPayoneMain = $this->Application()->PayoneMain();
-    if ($response->getStatus() == 'VALID')
+    if ($response->getStatus() == Payone_Api_Enum_ResponseType::VALID)
     {
-      $secStatus          = $response->getSecstatus();
+      $secStatus          = (int) $response->getSecstatus();
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringValue($response->getPersonstatus(), $config);
       $mappedPersonStatus = $moptPayoneMain->getHelper()->getUserScoringColorFromValue($mappedPersonStatus);
       //check secstatus and config
-      if ($secStatus == 10)
+      if ($secStatus == Payone_Api_Enum_AddressCheckSecstatus::ADDRESS_CORRECT)
       {
         //valid address returned -> save result to db
         $moptPayoneMain->getHelper()->saveShippingAddressCheckResult($userId, $response, $mappedPersonStatus);
@@ -1467,7 +1545,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $moptPayoneMain = $this->Application()->PayoneMain();
 
     // handle ERROR, VALID, INVALID 
-    if ($response->getStatus() == 'VALID')
+    if ($response->getStatus() == Payone_Api_Enum_ResponseType::VALID)
     {
       //save result
       $moptPayoneMain->getHelper()->saveConsumerScoreCheckResult($userId, $response);
@@ -1498,7 +1576,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   protected function createPayments()
   {
-    $mopt_payone__paymentMethods = $this->helper->mopt_payone__getPaymentMethods();
+    $mopt_payone__paymentMethods = $this->moptPayoneInstallHelper->mopt_payone__getPaymentMethods();
 
     foreach ($mopt_payone__paymentMethods as $paymentMethod)
     {
@@ -1580,138 +1658,92 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
       // ignore
     }
 
-    // add payment table
-    $sql = "CREATE TABLE IF NOT EXISTS `s_plugin_mopt_payone_payment_data` (`userId` int(11) NOT NULL,`moptPaymentData` text NOT NULL, PRIMARY KEY (`userId`))";
-    Shopware()->Db()->exec($sql);
-
-    // add PAYONE block for documents
-    $sql = "INSERT INTO `s_core_documents_box` (`documentID`, `name`, `style`, `value`) VALUES
-	(1, 'PAYONE_Footer', 'width: 170mm;\r\nposition:fixed;\r\nbottom:-20mm;\r\nheight: 15mm;', ?),
-	(1, 'PAYONE_Content_Info', ?, ?);";
-    Shopware()->Db()->query($sql, array(
-        '<table style="height: 90px;" border="0" width="100%">'
-        . '<tbody>'
-        . '<tr valign="top">'
-        . '<td style="width: 33%;">'
-        . '<p><span style="font-size: xx-small;">Demo GmbH</span></p>'
-        . '<p><span style="font-size: xx-small;">Steuer-Nr <br />UST-ID: <br />Finanzamt </span><span style="font-size: xx-small;">Musterstadt</span></p>'
-        . '</td>'
-        . '<td style="width: 33%;">'
-        . '<p><span style="font-size: xx-small;">AGB<br /></span></p>'
-        . '<p><span style="font-size: xx-small;">Gerichtsstand ist Musterstadt<br />Erf&uuml;llungsort Musterstadt</span></p>'
-        . '</td>'
-        . '<td style="width: 33%;">'
-        . '<p><span style="font-size: xx-small;">Gesch&auml;ftsf&uuml;hrer</span></p>'
-        . '<p><span style="font-size: xx-small;">Max Mustermann</span></p>'
-        . '</td>'
-        . '</tr>'
-        . '</tbody>'
-        . '</table>',
-        '.payment_instruction, .payment_instruction td, .payment_instruction tr {'
-        . '	margin: 0;'
-        . '	padding: 0;'
-        . '	border: 0;'
-        . '	font-size:8px;'
-        . '	font: inherit;'
-        . '	vertical-align: baseline;'
-        . '}'
-        . '.payment_note {'
-        . '	font-size: 10px;'
-        . '	color: #333;'
-        . '}',
-        '<div class="payment_note">'
-        . '<br/>'
-        . '{$instruction.clearing_instructionnote}<br/>'
-        . '{$instruction.clearing_legalnote}}<br/><br/>'
-        . '</div>'
-        . '<table class="payment_instruction">'
-        . '<tr>'
-        . '	<td>Empfänger:</td>'
-        . '	<td>{$instruction.clearing_bankaccountholder}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>Kontonr.:</td>'
-        . '	<td>{$instruction.clearing_bankaccount}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>BLZ:</td>'
-        . '	<td>{$instruction.clearing_bankcode}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>IBAN:</td>'
-        . '	<td>{$instruction.clearing_bankiban}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>BIC:</td>'
-        . '	<td>{$instruction.clearing_bankbic}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>Bank:</td>'
-        . '	<td>{$instruction.clearing_bankname}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>Betrag:</td>'
-        . '	<td>{$instruction.amount|currency}</td>'
-        . '</tr>'
-        . '<tr>'
-        . '	<td>Verwendungszweck:</td>'
-        . '	<td>{$instruction.clearing_reference}</td>'
-        . '</tr>'
-        . '</table>'
-    ));
-  }
-
-  protected function addAttributes()
-  {
-    // user extension
-    Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_result', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_date', 'date', true, null);
-    Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_color', 'VARCHAR(1)', true, null);
-    Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_value', 'integer', true, null);
-    // billing adress extension user
-    Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_result', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_date', 'date', true, null);
-    Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_personstatus', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_result', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_date', 'date', true, null);
-    Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_color', 'VARCHAR(1)', true, null);
-    Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_value', 'integer', true, null);
-    // shipping adress extension
-    Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_result', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_date', 'date', true, null);
-    Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_personstatus', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'consumerscore_color', 'VARCHAR(1)', true, null);
-    Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'consumerscore_value', 'integer', true, null);
-    // order extension
-    Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'txid', 'integer', true, null);
-    Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'status', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'sequencenumber', 'int(11)', true, null);
-    Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'is_authorized', 'TINYINT(1)', true, null);
-    Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'is_finally_captured', 'TINYINT(1)', true, null); //settlement for some payment-types
-    Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'clearing_data', 'text', true, null); //clearing data for some payment-types
-    // orderdetails(order articles) extension
-    Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'payment_status', 'VARCHAR(100)', true, null);
-    Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'shipment_date', 'date', true, null);
-    Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'captured', 'double', true, null);
-    Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'debit', 'double', true, null);
-
-    Shopware()->Models()->generateAttributeModels(
-            array(
-                's_user_attributes',
-                's_core_paymentmeans_attributes',
-                's_user_billingaddress_attributes',
-                's_user_shippingaddress_attributes',
-                's_order_attributes',
-                's_order_details_attributes',
-            )
-    );
+    $this->moptPayoneInstallHelper->moptCreatePaymentDataTable();
+    $this->moptPayoneInstallHelper->moptInsertDocumentsExtensionIntoDatabaseIfNotExist();
+    $this->moptPayoneInstallHelper->moptInsertEmptyConfigIfNotExists();
   }
 
   /**
-   * Creates and stores a payment item.
+   * extend shpoware models with PAYONE specific attributes 
+   */
+  protected function addAttributes()
+  {
+    $models = array();
+
+    // user extension
+    if (!$this->moptPayoneInstallHelper->moptUserAttributesExist())
+    {
+      Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_result', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_date', 'date', true, null);
+      Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_color', 'VARCHAR(1)', true, null);
+      Shopware()->Models()->addAttribute('s_user_attributes', 'mopt_payone', 'consumerscore_value', 'integer', true, null);
+
+      $models[] = 's_user_attributes';
+    }
+
+    // billing adress extension user
+    if (!$this->moptPayoneInstallHelper->moptBillingAddressAttributesExist())
+    {
+      Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_result', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_date', 'date', true, null);
+      Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'addresscheck_personstatus', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_result', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_date', 'date', true, null);
+      Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_color', 'VARCHAR(1)', true, null);
+      Shopware()->Models()->addAttribute('s_user_billingaddress_attributes', 'mopt_payone', 'consumerscore_value', 'integer', true, null);
+
+      $models[] = 's_user_billingaddress_attributes';
+    }
+
+    // shipping adress extension
+    if (!$this->moptPayoneInstallHelper->moptShippingAddressAttributesExist())
+    {
+      Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_result', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_date', 'date', true, null);
+      Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'addresscheck_personstatus', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'consumerscore_color', 'VARCHAR(1)', true, null);
+      Shopware()->Models()->addAttribute('s_user_shippingaddress_attributes', 'mopt_payone', 'consumerscore_value', 'integer', true, null);
+
+      $models[] = 's_user_shippingaddress_attributes';
+    }
+
+    // order extension
+    if (!$this->moptPayoneInstallHelper->moptOrderAttributesExist())
+    {
+      Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'txid', 'integer', true, null);
+      Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'status', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'sequencenumber', 'int(11)', true, null);
+      Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'is_authorized', 'TINYINT(1)', true, null);
+      Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'is_finally_captured', 'TINYINT(1)', true, null); //settlement for some payment-types
+      Shopware()->Models()->addAttribute('s_order_attributes', 'mopt_payone', 'clearing_data', 'text', true, null); //clearing data for some payment-types
+
+      $models[] = 's_order_attributes';
+    }
+
+    // orderdetails(order articles) extension
+    if (!$this->moptPayoneInstallHelper->moptOrderDetailsAttributesExist())
+    {
+      Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'payment_status', 'VARCHAR(100)', true, null);
+      Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'shipment_date', 'date', true, null);
+      Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'captured', 'double', true, null);
+      Shopware()->Models()->addAttribute('s_order_details_attributes', 'mopt_payone', 'debit', 'double', true, null);
+
+      $models[] = 's_order_details_attributes';
+    }
+
+    if (!empty($models))
+    {
+      Shopware()->Models()->generateAttributeModels($models);
+    }
+  }
+
+  /**
+   * Create menu items to access configuration, logs and support page
    */
   protected function createMenu()
   {
+    $configurationLabelName = $this->moptPayoneInstallHelper->moptGetConfigurationLabelName();
+
     $parent = $this->Menu()->findOneBy('label', 'Zahlungen');
     $item   = $this->createMenuItem(array(
         'label'  => 'PAYONE',
@@ -1723,7 +1755,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $parent = $item;
 
     $this->createMenuItem(array(
-        'label'      => 'Konfiguration',
+        'label'      => $configurationLabelName,
         'controller' => 'MoptConfigPayone',
         'action'     => 'Index',
         'class'      => 'sprite-wrench-screwdriver',
@@ -1833,9 +1865,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $response = $args->getSubject()->Response();
     $view     = $args->getSubject()->View();
 
-    if (!$request->isDispatched()
-            || $response->isException()
-            || $request->getModuleName() != 'frontend')
+    if (!$request->isDispatched() || $response->isException() || $request->getModuleName() != 'frontend')
     {
       return;
     }
@@ -1924,10 +1954,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onInitResourcePayoneBuilder(Enlight_Event_EventArgs $args)
   {
-    $this->Application()->Loader()->registerNamespace(
-            'Payone', $this->Path() . 'Components/Payone/'
-    );
-
     $builder = new Payone_Builder();
     return $builder;
   }
@@ -1940,7 +1966,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    */
   public function onInitResourcePayoneMain(Enlight_Event_EventArgs $args)
   {
-    $this->Application()->Loader()->registerNamespace('Mopt', $this->Path() . 'Components/Classes/');
     $moptPayoneMain = Mopt_PayoneMain::getInstance();
     return $moptPayoneMain;
   }
@@ -1971,6 +1996,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $view->extendsTemplate('backend/mopt_payone_order/model/position.js');
     $view->extendsTemplate('backend/mopt_payone_order/view/detail/overview.js');
     $view->extendsTemplate('backend/mopt_payone_order/view/detail/position.js');
+  }
+
+  public function moptExtendController_Backend_Payment(Enlight_Event_EventArgs $args)
+  {
+    $view = $args->getSubject()->View();
+    $args->getSubject()->View()->addTemplateDir($this->Path() . 'Views/');
+    $view->extendsTemplate('backend/mopt_payone_payment/controller/payment.js');
+    $view->extendsTemplate('backend/mopt_payone_payment/view/main/window.js');
   }
 
   /**
@@ -2055,14 +2088,14 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   {
     $document = $args->getSubject();
 
-    if ($document->_order->payment['name'] != 'mopt_payone__fin_billsafe')
+    if (!$this->Application()->PayoneMain()->getPaymentHelper()->isPayoneBillsafe($document->_order->payment['name']))
     {
       return;
     }
 
     // get PAYONE data from log
     $moptPayoneMain = $this->Application()->PayoneMain();
-    $payoneData     = $moptPayoneMain->getHelper()->getClearingDataFromOrderId($document->_order->order->id);
+    $payoneData     = $moptPayoneMain->getPaymentHelper()->getClearingDataFromOrderId($document->_order->order->id);
 
     if (empty($payoneData))
     {
@@ -2087,7 +2120,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $variables = $args->getReturn();
 
     //return if not payone preprepayment
-    if (!preg_match('#mopt_payone__acc_payinadvance#', $variables['additional']['payment']['name']))
+    if (!$this->Application()->PayoneMain()->getPaymentHelper()->isPayonePayInAdvance($variables['additional']['payment']['name']))
     {
       return;
     }
@@ -2145,7 +2178,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     {
       if ($paymentMean['id'] == 'mopt_payone_creditcard')
       {
-        $paymentMean['mopt_payone_credit_cards'] = $moptPayoneMain->getHelper()->mapCardLetter($paymentMean['mopt_payone_credit_cards']);
+        $paymentMean['mopt_payone_credit_cards'] = $moptPayoneMain->getPaymentHelper()->mapCardLetter($paymentMean['mopt_payone_credit_cards']);
         $data['payment_mean']                    = $paymentMean;
         break;
       }

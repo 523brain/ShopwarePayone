@@ -9,11 +9,11 @@ Ext.define('Shopware.apps.MoptConfigPayone.store.ComboInfoscore', {
     },
     {
       display: 'Infoscore (alle Merkmale)',
-      value: 'IB'
+      value: 'IA'
     },
     {
       display: 'Infoscore (alle Merkmale + Boniscore)',
-      value: 'IA'
+      value: 'IB'
     }
   ],
 });

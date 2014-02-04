@@ -11,15 +11,34 @@ class Mopt_PayoneParamBuilder
   const SEQUENCENUMBER_CAPTURE = 1;
 
   /**
+   * Payone Config
+   * @var array
+   */
+  protected $payoneConfig = null;
+
+  /**
+   * Payone Helper
+   * @var Mopt_PayoneHelper 
+   */
+  protected $payoneHelper = null;
+
+  /**
+   * Payone Payment Helper
+   * @var Mopt_PayonePaymentHelper 
+   */
+  protected $payonePaymentHelper = null;
+
+  /**
    * constructor, sets config and helper class
    *
    * @param array $payoneConfig
    * @param object $payoneHelper 
    */
-  public function __construct($payoneConfig, $payoneHelper)
+  public function __construct($payoneConfig, $payoneHelper, $payonePaymentHelper)
   {
     $this->payoneConfig = $payoneConfig;
     $this->payoneHelper = $payoneHelper;
+    $this->payonePaymentHelper = $payonePaymentHelper;
   }
 
   /**
@@ -46,11 +65,11 @@ class Mopt_PayoneParamBuilder
 
     if ($this->payoneConfig['liveMode'] == 1)
     {
-      $authParameters['mode'] = 'live';
+      $authParameters['mode'] = Payone_Enum_Mode::LIVE;
     }
     else
     {
-      $authParameters['mode']     = 'test';
+      $authParameters['mode'] = Payone_Enum_Mode::TEST;
     }
     $authParameters['encoding'] = 'UTF-8'; // optional param default is: ISO-8859-1
 
@@ -81,10 +100,9 @@ class Mopt_PayoneParamBuilder
   public function buildOrderCapture($order, $postionIds, $finalize)
   {
     $params = array();
-    $payment     = $order->getPayment();
-    $paymentName = $payment->getName();
+    $paymentName = $order->getPayment()->getName();
 
-    $params                   = array_merge($params, $this->getAuthParameters($payment->getId()));
+    $params                   = array_merge($params, $this->getAuthParameters($order->getPayment()->getId()));
     $params['txid']           = $order->getTransactionId();
     $params['sequencenumber'] = $this->getParamSequencenumber($order);
     $params['amount']         = $this->getParamCaptureAmount($order, $postionIds);
@@ -93,7 +111,7 @@ class Mopt_PayoneParamBuilder
     //create business object (used for settleaccount param)
     $business = new Payone_Api_Request_Parameter_Capture_Business();
 
-    if ($paymentName === 'mopt_payone__acc_payinadvance' || preg_match('#mopt_payone__ibt#', $paymentName))
+    if ($this->payonePaymentHelper->isPayonePayInAdvance($paymentName) || $this->payonePaymentHelper->isPayoneInstantBankTransfer($paymentName))
     {
       $business->setSettleaccount($finalize ? Payone_Api_Enum_Settleaccount::YES : Payone_Api_Enum_Settleaccount::NO);
     }
@@ -246,14 +264,18 @@ class Mopt_PayoneParamBuilder
 
     $billingAddress = $userData['billingaddress'];
 
-    $params['customerid']      = $userData['user']['customerId']; //@TODO check if it's better to use customernumber
-    $params['firstname']       = $billingAddress['firstname'];
-    $params['lastname']        = $billingAddress['lastname'];
-    $params['company']         = $billingAddress['company'];
-    $params['street']          = $billingAddress['street'] . ' ' . $billingAddress['streetnumber'];
-    $params['zip']             = $billingAddress['zipcode'];
-    $params['city']            = $billingAddress['city'];
-    $params['country']         = $userData['additional']['country']['countryiso'];
+    $params['customerid'] = $userData['user']['customerId']; //@TODO check if it's better to use customernumber
+    $params['firstname']  = $billingAddress['firstname'];
+    $params['lastname']   = $billingAddress['lastname'];
+    $params['company']    = $billingAddress['company'];
+    $params['street']     = $billingAddress['street'] . ' ' . $billingAddress['streetnumber'];
+    $params['zip']        = $billingAddress['zipcode'];
+    $params['city']       = $billingAddress['city'];
+    $params['country']    = $userData['additional']['country']['countryiso'];
+    if (!empty($billingAddress['stateID']))
+    {
+      $params['state']           = $this->getStateFromId($billingAddress['stateID'], $params['country']);
+    }
     $params['email']           = $userData['additional']['user']['email'];
     $params['telephonenumber'] = $billingAddress['phone'];
     $params['language']        = $this->getLanguageFromCountryId($userData['additional']['country']['id']);
@@ -283,6 +305,10 @@ class Mopt_PayoneParamBuilder
     $params['shipping_zip']       = $shippingAddress['zipcode'];
     $params['shipping_city']      = $shippingAddress['city'];
     $params['shipping_country']   = $this->getCountryFromId($shippingAddress['countryID']);
+    if (!empty($shippingAddress['stateID']))
+    {
+      $params['shipping_state'] = $this->getStateFromId($shippingAddress['stateID'], $params['shipping_country']);
+    }
 
     $personalData = new Payone_Api_Request_Parameter_Authorization_DeliveryData($params);
 
@@ -436,12 +462,12 @@ class Mopt_PayoneParamBuilder
     {
       case 'DE':
         {
-          $payment->setShippingprovider('DHL'); // DE:DHL / IT:BRT
+          $payment->setShippingprovider(Payone_Api_Enum_Shippingprovider::DHL); // DE:DHL / IT:BRT
         }
         break;
       case 'IT':
         {
-          $payment->setShippingprovider('BRT'); // DE:DHL / IT:BRT
+          $payment->setShippingprovider(Payone_Api_Enum_Shippingprovider::BARTOLINI); // DE:DHL / IT:Bartolini
         }
 
         break;
@@ -727,9 +753,16 @@ class Mopt_PayoneParamBuilder
    * @param string $id
    * @return string 
    */
-  protected function getStateFromId($id)
+  protected function getStateFromId($stateId, $countryIso)
   {
-    $sql   = 'SELECT `shortcode` FROM s_core_countries_states WHERE id = ' . $id;
+    $enabledTransmittingStatesCountryIsos = array('US', 'CA');
+
+    if (!in_array($countryIso, $enabledTransmittingStatesCountryIsos))
+    {
+      return '';
+    }
+
+    $sql   = 'SELECT `shortcode` FROM s_core_countries_states WHERE id = ' . $stateId;
     $state = Shopware()->Db()->fetchOne($sql);
 
     return $state;

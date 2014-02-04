@@ -6,12 +6,14 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
   protected $moptPayone__sdk__Builder = null;
   protected $moptPayone__main         = null;
   protected $moptPayone__helper       = null;
+  protected $moptPayone__paymentHelper  = null;
 
   public function init()
   {
     $this->moptPayone__sdk__Builder = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->PayoneBuilder();
     $this->moptPayone__main = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->PayoneMain();
     $this->moptPayone__helper = $this->moptPayone__main->getHelper();
+    $this->moptPayone__paymentHelper = $this->moptPayone__main->getPaymentHelper();
   }
 
   public function moptPayoneDebitAction()
@@ -42,7 +44,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       //fetch params
       $params = $this->moptPayone__main->getParamBuilder()->buildOrderDebit($order, $positionIds);
 
-      if ($config['submitBasket'] || preg_match('#mopt_payone__fin_billsafe#', $paymentName))
+      if ($config['submitBasket'] || $this->moptPayone__main->getPaymentHelper()->isPayoneBillsafe($paymentName))
       {
         $invoicing = $this->moptPayone__main->getParamBuilder()->getInvoicingFromOrder($order, $positionIds, 'skipCaptureMode', true);
       }
@@ -106,7 +108,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
       //fetch params
       $params = $this->moptPayone__main->getParamBuilder()->buildOrderCapture($order, $positionIds, $finalize);
 
-      if ($config['submitBasket'] || preg_match('#mopt_payone__fin_billsafe#', $paymentName))
+      if ($config['submitBasket'] || $this->moptPayone__main->getPaymentHelper()->isPayoneBillsafe($paymentName))
       {
         $invoicing = $this->moptPayone__main->getParamBuilder()->getInvoicingFromOrder($order, $positionIds, $finalize);
       }
@@ -123,7 +125,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
         $this->moptPayoneMarkPositionsAsCaptured($order, $positionIds);
 
         //extract and save clearing data
-        $clearingData = $this->moptPayone__helper->extractClearingDataFromResponse($response);
+        $clearingData = $this->moptPayone__paymentHelper->extractClearingDataFromResponse($response);
         if ($clearingData)
         {
           $this->moptPayoneSaveClearingData($order, $clearingData);

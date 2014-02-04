@@ -21,27 +21,33 @@ class Mopt_PayoneMain
 
   /**
    * Payone Config
-   * @var MoptPayoneConfig
+   * @var array
    */
   protected $payoneConfig = array();
 
   /**
    * Payone ParamBuilder
-   * @var MoptPayoneParamBuilder 
+   * @var Mopt_PayoneParamBuilder 
    */
   protected $paramBuilder = null;
 
   /**
    * Payone FormHandler
-   * @var MoptPayoneFormHandler 
+   * @var Mopt_PayoneFormHandler 
    */
   protected $formHandler = null;
 
   /**
    * Payone Helper
-   * @var MoptPayoneHelper 
+   * @var Mopt_PayoneHelper 
    */
   protected $helper = null;
+
+  /**
+   * Payone Payment Helper
+   * @var Mopt_PayonePaymentHelper 
+   */
+  protected $paymentHelper = null;
 
   /**
    * singleton accessor
@@ -59,7 +65,7 @@ class Mopt_PayoneMain
 
   /**
    * returns config according to submitted payment id
-    returns global config if no payment id is submitted
+   * returns global config if no payment id is submitted
    *
    * @param string $paymentId
    * @param bool $forceReload
@@ -94,7 +100,7 @@ class Mopt_PayoneMain
   {
     if (is_null($this->paramBuilder))
     {
-      $this->paramBuilder = new Mopt_PayoneParamBuilder($this->payoneConfig, $this->getHelper());
+      $this->paramBuilder = new Mopt_PayoneParamBuilder($this->payoneConfig, $this->getHelper(), $this->getPaymentHelper());
     }
     return $this->paramBuilder;
   }
@@ -114,7 +120,7 @@ class Mopt_PayoneMain
   }
 
   /**
-   * getter method for feedback handler
+   * getter method for helper
    * 
    * @return type 
    */
@@ -125,6 +131,21 @@ class Mopt_PayoneMain
       $this->helper = new Mopt_PayoneHelper();
     }
     return $this->helper;
+  }
+
+  /**
+   * getter method for payment helper
+   * 
+   * @return type 
+   */
+  public function getPaymentHelper()
+  {
+    if (is_null($this->paymentHelper))
+    {
+      $this->paymentHelper = new Mopt_PayonePaymentHelper();
+    }
+
+    return $this->paymentHelper;
   }
 
 }

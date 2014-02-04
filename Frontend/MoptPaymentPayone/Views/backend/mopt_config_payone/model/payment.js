@@ -13,6 +13,14 @@ Ext.define('Shopware.apps.MoptConfigPayone.model.Payment', {
     {
       name: 'description', 
       type: 'string'
+    },
+    {
+      name: 'name', 
+      type: 'string'
+    },
+    {
+      name: 'configSet', 
+      type: 'int'
     }
   ]
 });

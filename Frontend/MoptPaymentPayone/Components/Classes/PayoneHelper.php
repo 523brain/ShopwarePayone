@@ -7,162 +7,6 @@ class Mopt_PayoneHelper
 {
 
   /**
-   * returns array of PayOne paymetn methods
-   * 
-   * payment types are grouped
-   * mopt_payone__[group]_[brand]
-   *
-   * @return array 
-   */
-  public function mopt_payone__getPaymentMethods()
-  {
-    return array(
-        array(
-            'name'        => 'mopt_payone__cc_visa',
-            'description' => 'PAYONE Visa',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 1,),
-        array(
-            'name'        => 'mopt_payone__cc_mastercard',
-            'description' => 'PAYONE Mastercard',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 2,),
-        array(
-            'name'        => 'mopt_payone__cc_american_express',
-            'description' => 'PAYONE American Express',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 3,),
-        array(
-            'name'        => 'mopt_payone__cc_carte_blue',
-            'description' => 'PAYONE Carte Blue',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 4,),
-        array(
-            'name'        => 'mopt_payone__cc_diners_club',
-            'description' => 'PAYONE Diners Club',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 5,),
-        array(
-            'name'        => 'mopt_payone__cc_discover',
-            'description' => 'PAYONE Discover',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 6,),
-        array(
-            'name'        => 'mopt_payone__cc_jcb',
-            'description' => 'PAYONE JCB',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 7,),
-        array(
-            'name'        => 'mopt_payone__cc_maestro_international',
-            'description' => 'PAYONE Maestro International',
-            'template'    => 'mopt_paymentmean_creditcard.tpl',
-            'position'    => 8,),
-        array(
-            'name'        => 'mopt_payone__ibt_sofortueberweisung',
-            'description' => 'PAYONE Sofortüberweisung',
-            'template'    => 'mopt_paymentmean_sofort.tpl',
-            'position'    => 9,),
-        array(
-            'name'        => 'mopt_payone__ibt_giropay',
-            'description' => 'PAYONE Giropay',
-            'template'    => 'mopt_paymentmean_giropay.tpl',
-            'position'    => 10,),
-        array(
-            'name'        => 'mopt_payone__ibt_eps',
-            'description' => 'PAYONE eps',
-            'template'    => 'mopt_paymentmean_eps.tpl',
-            'position'    => 11,),
-        array(
-            'name'        => 'mopt_payone__ibt_post_efinance',
-            'description' => 'PAYONE Post-Finance EFinance',
-            'template'    => null,
-            'position'    => 12,),
-        array(
-            'name'        => 'mopt_payone__ibt_post_finance_card',
-            'description' => 'PAYONE Post-Finance Card',
-            'template'    => null,
-            'position'    => 13,),
-        array(
-            'name'        => 'mopt_payone__ibt_ideal',
-            'description' => 'PAYONE iDeal',
-            'template'    => 'mopt_paymentmean_ideal.tpl',
-            'position'    => 14,),
-        array(
-            'name'        => 'mopt_payone__ewallet_paypal',
-            'description' => 'PAYONE PayPal',
-            'template'    => null,
-            'position'    => 15,),
-        array(
-            'name'        => 'mopt_payone__acc_debitnote',
-            'description' => 'PAYONE Lastschrift',
-            'template'    => 'mopt_paymentmean_debit.tpl',
-            'position'    => 16,),
-        array(
-            'name'        => 'mopt_payone__acc_invoice',
-            'description' => 'PAYONE Offene Rechnung',
-            'template'    => null,
-            'position'    => 17,),
-        array(
-            'name'        => 'mopt_payone__acc_payinadvance',
-            'description' => 'PAYONE Vorkasse',
-            'template'    => null,
-            'position'    => 18,),
-        array(
-            'name'        => 'mopt_payone__acc_cashondel',
-            'description' => 'PAYONE Nachnahme',
-            'template'    => null,
-            'position'    => 19,),
-        array(
-            'name'        => 'mopt_payone__fin_billsafe',
-            'description' => 'PAYONE BillSAFE',
-            'template'    => null,
-            'position'    => 20,),
-    );
-    ;
-  }
-
-  /**
-   * adds Payone API value for creditcard
-   * 
-   * @param array $cardData
-   * @return array
-   */
-  public function mapCardLetter($cardData)
-  {
-    foreach ($cardData as &$creditCard)
-    {
-      switch ($creditCard['name'])
-      {
-        case "mopt_payone__cc_visa":
-          $creditCard['short'] = 'V';
-          break;
-        case 'mopt_payone__cc_mastercard':
-          $creditCard['short'] = 'M';
-          break;
-        case 'mopt_payone__cc_american_express':
-          $creditCard['short'] = 'A';
-          break;
-        case 'mopt_payone__cc_diners_club':
-          $creditCard['short'] = 'D';
-          break;
-        case 'mopt_payone__cc_jcb':
-          $creditCard['short'] = 'J';
-          break;
-        case 'mopt_payone__cc_maestro_international':
-          $creditCard['short'] = 'O';
-          break;
-        case 'mopt_payone__cc_discover':
-          $creditCard['short'] = 'C';
-          break;
-        case 'mopt_payone__cc_carte_blue':
-          $creditCard['short'] = 'B';
-          break;
-      }
-    }
-    return $cardData;
-  }
-
-  /**
    * returns Payone API value for selected addresschecktype
    * 
    * @param string $id
@@ -176,10 +20,10 @@ class Mopt_PayoneHelper
         $checkType = false;
         break;
       case 1:
-        $checkType = 'BA';
+        $checkType = Payone_Api_Enum_AddressCheckType::BASIC;
         break;
       case 2:
-        $checkType = 'PE';
+        $checkType = Payone_Api_Enum_AddressCheckType::PERSON;
         break;
     }
 
@@ -197,13 +41,13 @@ class Mopt_PayoneHelper
     switch ($id)
     {
       case 0:
-        $checkType = 'IH';
+        $checkType = Payone_Api_Enum_ConsumerscoreType::INFOSCORE_HARD;
         break;
       case 1:
-        $checkType = 'IA';
+        $checkType = Payone_Api_Enum_ConsumerscoreType::INFOSCORE_ALL;
         break;
       case 2:
-        $checkType = 'IB';
+        $checkType = Payone_Api_Enum_ConsumerscoreType::INFOSCORE_ALL_BONI;
         break;
     }
 
@@ -331,11 +175,11 @@ class Mopt_PayoneHelper
   {
     if ($id == 1)
     {
-      return 'live';
+      return Payone_Enum_Mode::LIVE;
     }
     else
     {
-      return 'test';
+      return Payone_Enum_Mode::TEST;
     }
   }
 
@@ -350,35 +194,35 @@ class Mopt_PayoneHelper
   {
     switch ($personStatus)
     {
-      case 'NONE':
+      case Payone_Api_Enum_AddressCheckPersonstatus::NONE:
         {
           return $config['mapPersonCheck'];
         }
-      case 'PPB':
+      case Payone_Api_Enum_AddressCheckPersonstatus::PPB:
         {
           return $config['mapKnowPreLastname'];
         }
-      case 'PHB':
+      case Payone_Api_Enum_AddressCheckPersonstatus::PHB:
         {
           return $config['mapKnowLastname'];
         }
-      case 'PAB':
+      case Payone_Api_Enum_AddressCheckPersonstatus::PAB:
         {
           return $config['mapNotKnowPreLastname'];
         }
-      case 'PKI':
+      case Payone_Api_Enum_AddressCheckPersonstatus::PKI:
         {
           return $config['mapMultiNameToAdress'];
         }
-      case 'PNZ':
+      case Payone_Api_Enum_AddressCheckPersonstatus::PNZ:
         {
           return $config['mapUndeliverable'];
         }
-      case 'PPV':
+      case Payone_Api_Enum_AddressCheckPersonstatus::PPV:
         {
           return $config['mapPersonDead'];
         }
-      case 'PPF':
+      case Payone_Api_Enum_AddressCheckPersonstatus::PPF:
         {
           return $config['mapWrongAdress'];
         }
@@ -687,14 +531,13 @@ class Mopt_PayoneHelper
   }
 
   /**
-   * save corrected address
+   * save corrected billing address
    *
    * @param string $userId
    * @param object $response 
    */
   public function saveCorrectedBillingAddress($userId, $response)
   {
-    //get user address id
     $sql = 'UPDATE `s_user_billingaddress` SET street=?, streetnumber=?, zipcode=?, city=?  WHERE userID = ?';
     Shopware()->Db()->query(
             $sql, array(
@@ -706,14 +549,13 @@ class Mopt_PayoneHelper
   }
 
   /**
-   * save corrected address
+   * save corrected shipping address
    *
    * @param string $userId
    * @param object $response 
    */
   public function saveCorrectedShippingAddress($userId, $response)
   {
-    //get user address id
     $sql = 'UPDATE `s_user_shippingaddress` SET street=?, streetnumber=?, zipcode=?, city=?  WHERE userID = ?';
     Shopware()->Db()->query(
             $sql, array(
@@ -737,51 +579,6 @@ class Mopt_PayoneHelper
     $sql = 'UPDATE `s_user_billingaddress_attributes`' .
             'SET mopt_payone_addresscheck_date=?, mopt_payone_addresscheck_result=? WHERE billingID = ?';
     Shopware()->Db()->query($sql, array('NULL', 'NULL', $billingId));
-  }
-
-  /**
-   * delete saved payment data
-   *
-   * @param string $userId 
-   */
-  public function deletePaymentData($userId)
-  {
-    $sql    = 'SELECT userId FROM s_plugin_mopt_payone_payment_data WHERE userId = ' . $userId;
-    $result = Shopware()->Db()->fetchOne($sql);
-
-    if ($result)
-    {
-      $sql = 'DELETE FROM s_plugin_mopt_payone_payment_data WHERE userId = ' . $userId;
-      Shopware()->Db()->exec($sql);
-    }
-  }
-
-  /**
-   * set payone prepayment as payment method
-   *
-   * @param string $userId 
-   */
-  public function setPayonePrepaymentAsPayment($userId)
-  {
-    $sql       = "SELECT id FROM s_core_paymentmeans WHERE name LIKE 'mopt_payone__acc_payinadvance'";
-    $paymentId = Shopware()->Db()->fetchOne($sql);
-
-    $sql = 'UPDATE s_user SET paymentID = ? WHERE id = ?';
-    Shopware()->Db()->query($sql, array($paymentId, $userId));
-  }
-
-  /**
-   * save payment data
-   *
-   * @param string $userId
-   * @param array $paymentData 
-   */
-  public function savePaymentData($userId, $paymentData)
-  {
-    $sql         = 'replace into `s_plugin_mopt_payone_payment_data`' .
-            '(`userId`,`moptPaymentData`) values (?,?)';
-    $paymentData = serialize($paymentData['formData']);
-    Shopware()->Db()->query($sql, array($userId, $paymentData));
   }
 
   /**
@@ -924,20 +721,6 @@ class Mopt_PayoneHelper
 
     //no check are active for this payment method
     return -3;
-  }
-
-  /**
-   * returns payment name
-   *
-   * @param string $paymentID
-   * @return string 
-   */
-  public function getPaymentNameFromId($paymentID)
-  {
-    $sql         = 'SELECT `name` FROM `s_core_paymentmeans` WHERE id = ?';
-    $paymentName = Shopware()->Db()->fetchOne($sql, $paymentID);
-
-    return $paymentName;
   }
 
   /**
@@ -1230,55 +1013,6 @@ class Mopt_PayoneHelper
     }
 
     return $userBillingAddressCheckData;
-  }
-
-  /**
-   * returns clearing data
-   *
-   * @param string $orderId
-   * @return array
-   * @throws Exception 
-   */
-  public function getClearingDataFromOrderId($orderId)
-  {
-    $data = array();
-
-    if (!$order = Shopware()->Models()->getRepository('Shopware\Models\Order\Order')->find($orderId))
-    {
-      throw new Exception("Order not found.");
-    }
-
-    $attribute    = $order->getAttribute();
-    $clearingData = $attribute->getMoptPayoneClearingData();
-    json_decode($clearingData, $data);
-
-    return $data;
-  }
-
-  /**
-   * extract clearing data from response object
-   *
-   * @param object $response
-   * @return boolean 
-   */
-  public function extractClearingDataFromResponse($response)
-  {
-    $responseData = $response->toArray();
-
-    foreach ($responseData as $key => $value)
-    {
-      if (strpos($key, 'clearing_') === false)
-      {
-        unset($responseData[$key]);
-      }
-    }
-
-    if (empty($responseData))
-    {
-      return false;
-    }
-
-    return $responseData;
   }
 
 }

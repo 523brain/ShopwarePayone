@@ -9,6 +9,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
   protected $moptPayone__serviceBuilder = null;
   protected $moptPayone__main           = null;
   protected $moptPayone__helper         = null;
+  protected $moptPayone__paymentHelper  = null;
 
   /**
    *  Quote: "Der SessionStatus wird von folgenden IP-Adressen aus verschickt: 213.178.72.196 bzw. 213.178.72.197 sowie 217.70.200.0/24."
@@ -20,6 +21,9 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
     $this->moptPayone__serviceBuilder = $this->Plugin()->Application()->PayoneBuilder();
     $this->moptPayone__main = $this->Plugin()->Application()->PayoneMain();
     $this->moptPayone__helper = $this->moptPayone__main->getHelper();
+    $this->moptPayone__paymentHelper = $this->moptPayone__main->getPaymentHelper();
+
+    $this->Front()->Plugins()->ViewRenderer()->setNoRender();
   }
 
   public function indexAction()
@@ -72,7 +76,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
       $attributeData->setMoptPayoneSequencenumber($payoneRequest->getSequencenumber());
       //@TODO set sequencenumber from request
 
-      $clearingData = $this->moptPayone__helper->extractClearingDataFromResponse($payoneRequest);
+      $clearingData = $this->moptPayone__paymentHelper->extractClearingDataFromResponse($payoneRequest);
       if ($clearingData)
       {
         $clearingData = json_encode($clearingData);
@@ -124,8 +128,15 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Enlight_Control
         {
           continue;
         }
+
+        //configure ZEND Http Client
+        $zendClientConfig = array(
+            'adapter'     => 'Zend_Http_Client_Adapter_Curl',
+            'curloptions' => array(CURLOPT_FOLLOWLOCATION => true),
+        );
+
         // new HTTP request to some HTTP address
-        $client = new Zend_Http_Client($url);
+        $client = new Zend_Http_Client($url, $zendClientConfig);
         // set Timeout
         $client->setConfig(array('timeout' => 60));
 

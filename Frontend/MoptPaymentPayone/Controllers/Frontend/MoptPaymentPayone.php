@@ -19,9 +19,15 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
   /**
    * PayoneMain
-   * @var MoptPayoneMain 
+   * @var Mopt_PayoneMain 
    */
   protected $moptPayoneMain = null;
+
+  /**
+   * PayoneMain
+   * @var Mopt_PayonePaymentHelper 
+   */
+  protected $moptPayonePaymentHelper = null;
 
   /**
    * PayOne Builder
@@ -42,6 +48,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     $this->admin = Shopware()->Modules()->Admin();
     $this->payoneServiceBuilder = $this->Plugin()->Application()->PayoneBuilder();
     $this->moptPayoneMain = $this->Plugin()->Application()->PayoneMain();
+    $this->moptPayonePaymentHelper = $this->moptPayoneMain->getPaymentHelper();
   }
 
   /**
@@ -55,56 +62,53 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   /**
    * check if the plugin payment methods are choosen
    * 
-   * @return type 
+   * @return redirect to payment action or checkout controller 
    */
   public function indexAction()
   {
-    $session = Shopware()->Session();
-
-    if ($session->moptConsumerScoreCheckNeedsUserAgreement)
+    if (Shopware()->Session()->moptConsumerScoreCheckNeedsUserAgreement)
     {
       return $this->redirect(array('controller' => 'checkout'));
     }
 
-    if (preg_match('#mopt_payone__cc#', $this->getPaymentShortName()))
+    $paymentShortName = $this->getPaymentShortName();
+
+    if ($this->moptPayonePaymentHelper->isPayoneCreditcard($paymentShortName))
     {
       return $this->redirect(array('action'      => 'creditcard', 'forceSecure' => true));
     }
 
-    switch ($this->getPaymentShortName())
+    if ($this->moptPayonePaymentHelper->isPayoneInstantBankTransfer($paymentShortName))
     {
-      case 'mopt_payone_creditcard':
-        return $this->redirect(array('action'      => 'creditcard', 'forceSecure' => true));
-      case 'mopt_payone__ibt_sofortueberweisung':
-        return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
-      case 'mopt_payone__ibt_giropay':
-        return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
-      case 'mopt_payone__ibt_eps':
-        return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
-      case 'mopt_payone__ibt_post_efinance':
-        return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
-      case 'mopt_payone__ibt_post_finance_card':
-        return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
-      case 'mopt_payone__ibt_ideal':
-        return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
-      case 'mopt_payone__ewallet_paypal':
-        return $this->redirect(array('action'      => 'paypal', 'forceSecure' => true));
-      case 'mopt_payone__acc_debitnote':
-        return $this->redirect(array('action'      => 'debitnote', 'forceSecure' => true));
-      case 'mopt_payone__acc_invoice':
-        return $this->redirect(array('action'      => 'standard', 'forceSecure' => true));
-      case 'mopt_payone__acc_payinadvance':
-        return $this->redirect(array('action'      => 'standard', 'forceSecure' => true));
-      case 'mopt_payone__acc_cashondel':
-        return $this->redirect(array('action'      => 'cashondel', 'forceSecure' => true));
-      case 'mopt_payone__fin_billsafe':
-        return $this->redirect(array('action'      => 'finance', 'forceSecure' => true));
-      case 'mopt_payone__fin_commerzfin':
-        return $this->redirect(array('action'      => 'finance', 'forceSecure' => true));
-
-      default:
-        return $this->redirect(array('controller' => 'checkout'));
+      return $this->redirect(array('action'      => 'instanttransfer', 'forceSecure' => true));
     }
+
+    if ($this->moptPayonePaymentHelper->isPayonePaypal($paymentShortName))
+    {
+      return $this->redirect(array('action'      => 'paypal', 'forceSecure' => true));
+    }
+
+    if ($this->moptPayonePaymentHelper->isPayoneDebitnote($paymentShortName))
+    {
+      return $this->redirect(array('action'      => 'debitnote', 'forceSecure' => true));
+    }
+
+    if ($this->moptPayonePaymentHelper->isPayoneInvoice($paymentShortName) || $this->moptPayonePaymentHelper->isPayonePayInAdvance($paymentShortName))
+    {
+      return $this->redirect(array('action'      => 'standard', 'forceSecure' => true));
+    }
+
+    if ($this->moptPayonePaymentHelper->isPayoneCashOnDelivery($paymentShortName))
+    {
+      return $this->redirect(array('action'      => 'cashondel', 'forceSecure' => true));
+    }
+
+    if ($this->moptPayonePaymentHelper->isPayoneFinance($paymentShortName))
+    {
+      return $this->redirect(array('action'      => 'finance', 'forceSecure' => true));
+    }
+
+    return $this->redirect(array('controller' => 'checkout'));
   }
 
   public function creditcardAction()
@@ -180,30 +184,11 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   {
     $userId = Shopware()->Session()->sUserId;
 
-    $sql         = 'SELECT `moptPaymentData` FROM s_plugin_mopt_payone_payment_data WHERE userId = ?';
-    $paymentData = unserialize(Shopware()->Db()->fetchOne($sql, $userId));
+    $sql              = 'SELECT `moptPaymentData` FROM s_plugin_mopt_payone_payment_data WHERE userId = ?';
+    $paymentData      = unserialize(Shopware()->Db()->fetchOne($sql, $userId));
+    $paymentShortName = $this->getPaymentShortName();
 
-    switch ($this->getPaymentShortName())
-    {
-      case 'mopt_payone__ibt_sofortueberweisung':
-        $paymentData['mopt_payone__onlinebanktransfertype'] = 'PNT';
-        break;
-      case 'mopt_payone__ibt_giropay':
-        $paymentData['mopt_payone__onlinebanktransfertype'] = 'GPY';
-        break;
-      case 'mopt_payone__ibt_eps':
-        $paymentData['mopt_payone__onlinebanktransfertype'] = 'EPS';
-        break;
-      case 'mopt_payone__ibt_post_efinance':
-        $paymentData['mopt_payone__onlinebanktransfertype'] = 'PFF';
-        break;
-      case 'mopt_payone__ibt_post_finance_card':
-        $paymentData['mopt_payone__onlinebanktransfertype'] = 'PFC';
-        break;
-      case 'mopt_payone__ibt_ideal':
-        $paymentData['mopt_payone__onlinebanktransfertype'] = 'IDL';
-        break;
-    }
+    $paymentData['mopt_payone__onlinebanktransfertype'] = $this->moptPayonePaymentHelper->getOnlineBankTransferTypeFromPaymentName($paymentShortName);
 
     $config   = $this->moptPayoneMain->getPayoneConfig($this->getPaymentId());
     $payment  = $this->moptPayoneMain->getParamBuilder()->getPaymentInstantBankTransfer($this->Front()->Router(), $paymentData);
@@ -245,13 +230,13 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
   {
     $paymentId = $this->getPaymentShortName();
 
-    if ($paymentId == 'mopt_payone__acc_invoice')
+    if ($this->moptPayonePaymentHelper->isPayoneInvoice($paymentId))
     {
-      $clearingType = 'rec';
+      $clearingType = Payone_Enum_ClearingType::INVOICE;
     }
     else
     {
-      $clearingType = 'vor';
+      $clearingType = Payone_Enum_ClearingType::ADVANCEPAYMENT;
     }
 
     $config   = $this->moptPayoneMain->getPayoneConfig($this->getPaymentId());
@@ -281,11 +266,11 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     if ($paymentId == 'mopt_payone__fin_billsafe')
     {
-      $financeType = 'BSV';
+      $financeType = Payone_Api_Enum_FinancingType::BSV;
     }
     else
     {
-      $financeType = 'CFR';
+      $financeType = Payone_Api_Enum_FinancingType::CFR;
     }
 
     $config   = $this->moptPayoneMain->getPayoneConfig($this->getPaymentId());
@@ -406,7 +391,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     else
     {
       //extract possible clearing data
-      $clearingData = $this->moptPayoneMain->getHelper()->extractClearingDataFromResponse($response);
+      $clearingData = $this->moptPayoneMain->getPaymentHelper()->extractClearingDataFromResponse($response);
 
       if ($clearingData)
       {
@@ -748,8 +733,8 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
       {
         //abort
         //delete payment data and set to payone prepayment
-        $this->moptPayoneMain->getHelper()->deletePaymentData($userId);
-        $this->moptPayoneMain->getHelper()->setPayonePrepaymentAsPayment($userId);
+        $this->moptPayoneMain->getPaymentHelper()->deletePaymentData($userId);
+        $this->moptPayoneMain->getPaymentHelper()->setConfiguredDefaultPaymentAsPayment($userId);
         echo json_encode(false);
       }
       else
@@ -780,8 +765,8 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     {
       //abort
       //delete payment data and set to p1 prepeyment
-      $this->moptPayoneMain->getHelper()->deletePaymentData($userId);
-      $this->moptPayoneMain->getHelper()->setPayonePrepaymentAsPayment($userId);
+      $this->moptPayoneMain->getPaymentHelper()->deletePaymentData($userId);
+      $this->moptPayoneMain->getPaymentHelper()->setConfiguredDefaultPaymentAsPayment($userId);
       echo json_encode(false);
     }
     else
