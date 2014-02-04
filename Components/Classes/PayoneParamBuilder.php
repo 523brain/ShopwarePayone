@@ -284,7 +284,7 @@ class Mopt_PayoneParamBuilder
     $params['email']           = $userData['additional']['user']['email'];
     $params['telephonenumber'] = $billingAddress['phone'];
     $params['language']        = $this->getLanguageFromActiveShop();
-    $params['ustid']           = $billingAddress['firstname'];
+    $params['vatid']           = $billingAddress['ustid'];
     $params['ip']              = $_SERVER['REMOTE_ADDR'];
     $params['gender']          = ($billingAddress['salutation'] === 'mr') ? 'm' : 'f';
     if($billingAddress['birthday'] !== '0000-00-00')
