@@ -634,7 +634,7 @@ class Mopt_PayoneParamBuilder
     $params = array();
 
     $params['id'] = substr($shipment['name'], 0, 100); //article number
-    $params['pr'] = $basket['sShippingcostsWithTax']; //price
+    $params['pr'] = $basket['sShippingcosts']; //price
     $params['no'] = 1; // ordered quantity
     $params['de'] = substr($shipment['name'], 0, 100); // description check length
     $params['va'] = number_format($basket['sShippingcostsTax'], 0, '.', ''); // vat
