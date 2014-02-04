@@ -940,7 +940,7 @@ class Mopt_PayoneHelper
             . $db->quote($order->getNumber()) . ", "
             . "'0', "
             . "'SHIPPING', "
-            . $db->quote($order->getInvoiceShipping()) . ", "
+            . ($order->getTaxFree() ? $db->quote($order->getInvoiceShippingNet()) : $db->quote($order->getInvoiceShipping())) . ", "
             . "'1', "
             . $db->quote($dispatch->getName()) . ", "
             . "'0', "
