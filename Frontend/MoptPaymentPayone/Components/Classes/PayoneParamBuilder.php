@@ -279,7 +279,7 @@ class Mopt_PayoneParamBuilder
     $params['email']           = $userData['additional']['user']['email'];
     $params['telephonenumber'] = $billingAddress['phone'];
     $params['language']        = $this->getLanguageFromCountryId($userData['additional']['country']['id']);
-    $params['ustid']           = $billingAddress['firstname'];
+    $params['vatid']           = $billingAddress['ustid'];
     $params['ip']              = $_SERVER['REMOTE_ADDR'];
 
     $personalData = new Payone_Api_Request_Parameter_Authorization_PersonalData($params);
