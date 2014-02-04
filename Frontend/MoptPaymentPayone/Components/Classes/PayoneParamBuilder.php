@@ -264,7 +264,7 @@ class Mopt_PayoneParamBuilder
 
     $billingAddress = $userData['billingaddress'];
 
-    $params['customerid'] = $userData['user']['customerId']; //@TODO check if it's better to use customernumber
+    $params['customerid'] = $billingAddress['customernumber'];
     $params['firstname']  = $billingAddress['firstname'];
     $params['lastname']   = $billingAddress['lastname'];
     $params['company']    = $billingAddress['company'];
