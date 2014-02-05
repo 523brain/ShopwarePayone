@@ -608,15 +608,9 @@ class Mopt_PayoneParamBuilder
       }
       $params['no'] = $position->getQuantity(); // ordered quantity
       $params['de'] = substr($position->getArticleName(), 0, 100); // description
-      if ($position->getTaxRate() == 0)
-      {
-        $params['va'] = number_format($position->getTax()->getTax(), 0, '.', '');
-      }
-      else
-      {
-        $params['va'] = number_format($position->getTaxRate(), 0, '.', ''); // vat
-      }
+      $params['va'] = number_format($position->getTaxRate(), 0, '.', ''); // vat
       $params['it'] = Payone_Api_Enum_InvoicingItemType::GOODS; //item type
+
       $mode         = $position->getMode();
       if ($mode == 2)
       {
