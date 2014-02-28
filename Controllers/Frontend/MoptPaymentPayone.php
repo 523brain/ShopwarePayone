@@ -547,7 +547,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     if ($config['submitBasket'] || $clearingType === 'fnc')
     {
-      $request->setInvoicing($paramBuilder->getInvoicing($this->getBasket(), $this->getShipment()));
+      $request->setInvoicing($paramBuilder->getInvoicing($this->getBasket(), $this->getShipment(), $this->getUserData()));
     }
 
     if ($payment)
