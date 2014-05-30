@@ -520,11 +520,15 @@ class Mopt_PayoneParamBuilder
    * @param array $shipment
    * @return \Payone_Api_Request_Parameter_Invoicing_Transaction 
    */
-  public function getInvoicing($basket, $shipment)
+  public function getInvoicing($basket, $shipment, $userData)
   {
     $params = array();
     $transaction = new Payone_Api_Request_Parameter_Invoicing_Transaction($params);
-    $taxFree = $basket['AmountNetNumeric'] == $basket['AmountWithTaxNumeric'];
+
+    $taxFree = false;
+    if (isset($userData['additional']['charge_vat'])) {
+      $taxFree = ! $userData['additional']['charge_vat'];
+    }
 
     foreach ($basket['content'] as $article)
     {
