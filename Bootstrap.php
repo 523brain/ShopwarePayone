@@ -552,13 +552,11 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
           $arguments->setReturn(true);
           return;
         }
-        else
-        {
-          $arguments->setReturn(false);
-          return;
-        }
       }
     }
+
+    $arguments->setReturn(false);
+    return;
   }
 
   /**
