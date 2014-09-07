@@ -672,7 +672,6 @@ class Mopt_PayoneParamBuilder
           $includeShipment = false)
   {
     $transaction = new Payone_Api_Request_Parameter_Capture_Invoicing_Transaction(array());
-    $taxrate = 0;
 
     foreach ($order->getDetails() as $position)
     {
@@ -710,7 +709,6 @@ class Mopt_PayoneParamBuilder
       else
       {
         $params['va'] = number_format($position->getTaxRate(), 0, '.', ''); // vat
-        $taxrate = number_format($position->getTaxRate(), 0, '.', '');
       }
       $params['it']   = Payone_Api_Enum_InvoicingItemType::GOODS; //item type
       $mode           = $position->getMode();
@@ -766,8 +764,10 @@ class Mopt_PayoneParamBuilder
       $params['id'] = substr($order->getDispatch()->getName(), 0, 100); //article number
       $params['de'] = substr($order->getDispatch()->getName(), 0, 100); //article number
       $params['no'] = 1;
-      $params['va'] = $taxrate; // vat - dirty workaround (collected tax rate from items
-      //@TODO check if shipping cost tax rate is available/saved somewhere
+      $params['va'] = 0;
+      if ($order->getInvoiceShipping() != 0) { // Tax rate calculation below would divide by zero otherwise
+        $params['va'] = round(($order->getInvoiceShipping() / $order->getInvoiceShippingNet() - 1) * 100);
+      }
 
       $params = array_map('htmlspecialchars_decode', $params);
       $item   = new Payone_Api_Request_Parameter_Invoicing_Item($params);
