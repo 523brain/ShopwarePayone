@@ -18,8 +18,10 @@ Ext.define('Shopware.apps.Order.controller.MoptPayoneDetail', {
   onMoptPayoneDebitPositions: function(order, grid, options) {
     var me = this;
     var positionIds = me.moptPayoneGetPositionIdsFromGrid(grid);
-    
-    if(!positionIds){
+
+    if (!positionIds && order.get('invoiceShipping') > 0) {
+      positionIds = [];
+    } else if (!positionIds) {
       return;
     }
     
