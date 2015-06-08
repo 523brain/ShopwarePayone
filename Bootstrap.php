@@ -1473,6 +1473,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   {
     $returnValues = $arguments->getReturn();
 
+    if ($returnValues === false) {
+        return false;
+    }
+
     $user = $arguments->getSubject()->sGetUserData();
 
     if (empty($user['additional']['payment']['id']))
