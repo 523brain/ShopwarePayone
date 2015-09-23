@@ -11,8 +11,8 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
   public function init()
   {
     $this->moptPayone__sdk__Builder = Shopware()->Plugins()->Frontend()
-            ->MoptPaymentPayone()->Application()->PayoneBuilder();
-    $this->moptPayone__main = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->PayoneMain();
+            ->MoptPaymentPayone()->Application()->MoptPayoneBuilder();
+    $this->moptPayone__main = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->MoptPayoneMain();
     $this->moptPayone__helper = $this->moptPayone__main->getHelper();
     $this->moptPayone__paymentHelper = $this->moptPayone__main->getPaymentHelper();
   }
@@ -327,8 +327,7 @@ class Shopware_Controllers_Backend_MoptPayoneOrder extends Shopware_Controllers_
   protected function moptPayoneSaveClearingData($order, $clearingData)
   {
     $attribute    = $this->moptPayone__helper->getOrCreateAttribute($order);
-    $clearingData = json_encode($clearingData);
-    $attribute->setMoptPayoneClearingData($clearingData);
+    $attribute->setMoptPayoneClearingData(json_encode($clearingData));
 
     Shopware()->Models()->persist($attribute);
     Shopware()->Models()->flush();

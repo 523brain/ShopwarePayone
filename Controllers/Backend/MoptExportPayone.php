@@ -22,8 +22,8 @@ class Shopware_Controllers_Backend_MoptExportPayone extends Shopware_Controllers
     //$this->Front()->Plugins()->ViewRenderer()->setNoRender();
       
     $this->moptPayone__sdk__Builder = Shopware()->Plugins()->Frontend()
-              ->MoptPaymentPayone()->Application()->PayoneBuilder();
-    $this->moptPayone__main = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->PayoneMain();
+              ->MoptPaymentPayone()->Application()->MoptPayoneBuilder();
+    $this->moptPayone__main = Shopware()->Plugins()->Frontend()->MoptPaymentPayone()->Application()->MoptPayoneMain();
     $this->moptPayone__helper = $this->moptPayone__main->getHelper();
     $this->moptPayone__paymentHelper = $this->moptPayone__main->getPaymentHelper();
       
@@ -196,7 +196,11 @@ class Shopware_Controllers_Backend_MoptExportPayone extends Shopware_Controllers
           {
               continue;
           }
-          $paymentMethods[] = $this->createPaymentExportObject($paymentMethod, $checkCvC);
+          
+          $paymentMethodData = $this->createPaymentExportObject($paymentMethod, $checkCvC);
+          if($paymentMethodData) {
+              $paymentMethods[] = $paymentMethodData;
+          }
       }
       return $paymentMethods;
     }
@@ -213,7 +217,7 @@ class Shopware_Controllers_Backend_MoptExportPayone extends Shopware_Controllers
       $paymentName = $paymentMethod['name'];
       $config = $this->moptPayone__main->getPayoneConfig($paymentMethod['id']);
          
-      if($paymentHelper->isPayoneCreditcard($paymentName))
+      if($paymentHelper->isPayoneCreditcardForExport($paymentName))
       {
         $paymentDto = new Payone_Settings_Data_ConfigFile_PaymentMethod_Creditcard();
         $paymentDto->setCvc2($checkCvC);
@@ -265,6 +269,16 @@ class Shopware_Controllers_Backend_MoptExportPayone extends Shopware_Controllers
         
       }
       
+      if($paymentHelper->isPayoneBarzahlen($paymentName))
+      {
+        $paymentDto = new Payone_Settings_Data_ConfigFile_PaymentMethod_Wallet();
+        
+      }
+      
+        if (!$paymentDto) {
+            return false;
+        }
+
       $paymentDto->setKey($paymentMethod['name']);
       $paymentDto->setTitle($paymentMethod['name']);
       $paymentDto->setId($paymentMethod['id']);

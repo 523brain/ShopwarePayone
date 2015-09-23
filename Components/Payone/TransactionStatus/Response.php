@@ -56,12 +56,4 @@ class Payone_TransactionStatus_Response extends Payone_TransactionStatus_Respons
     {
         return $this->status;
     }
-    
-    /**
-     * @param Payone_Protocol_Service_ApplyFilters $applyFilters
-     */
-    public function setApplyFilters(Payone_Protocol_Service_ApplyFilters $applyFilters)
-    {
-        $this->applyFilters = $applyFilters;
-    }
 }

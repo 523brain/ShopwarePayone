@@ -229,4 +229,13 @@ abstract class Payone_Settings_Data_ConfigFile_PaymentMethod_Abstract
     {
         return $this->mode;
     }
+    
+    /**
+     * @param string $key
+     */
+    public function setKey(string $key)
+    {
+        $this->key = $key;
+    }
+
 }

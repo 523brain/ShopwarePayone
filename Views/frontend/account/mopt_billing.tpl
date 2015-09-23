@@ -1,17 +1,13 @@
 {extends file="frontend/account/billing.tpl"}
 
-{block name="frontend_index_content" append}
-{if $moptAddressCheckNeedsUserVerification}
-<script type="text/javascript">
-  $(document).ready(function() {
-    $.post('{url controller=moptPaymentPayone action=ajaxVerifyAddress forceSecure}', function (data) {
-      $.modal(data, '', {
-        'position': 'fixed',
-        'width': 500,
-        'height': 500
-      }).find('.close').remove();
-    });
-  });
-</script>
-{/if}
+{block name="frontend_index_header_javascript" append}
+    {if $moptAddressCheckNeedsUserVerification}
+        <script type="text/javascript">
+            $(document).ready(function () {
+                $.post('{url controller=moptAjaxPayone action=ajaxVerifyAddress forceSecure}', function (data) {
+                    $('.content-main').prepend(data);
+                });
+            });
+        </script>
+    {/if}
 {/block}

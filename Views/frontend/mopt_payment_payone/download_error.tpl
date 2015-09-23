@@ -15,9 +15,13 @@
 {$sBreadcrumb = [['name'=>"{s namespace='frontend/MoptPaymentPayone/payment' name=mandateDownloadTitle}Mandat Download{/s}"]]}
 {/block}
 
+{* Hide sidebar left *}
+{block name='frontend_index_content_left'}{/block}
+
 {* Main content *}
 {block name='frontend_index_content'}
 <div id="center" class="grid_13">
+    
   <h2>{$errormessage|escape|nl2br}</h2>
   <br />
   <h3>

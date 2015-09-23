@@ -10,17 +10,23 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
     protected $moptPayone__main = null;
     protected $moptPayone__helper = null;
     protected $moptPayone__paymentHelper = null;
+    protected $logger = null;
 
     /**
      * init notification controller for processing status updates
      */
     public function init()
     {
-        $this->moptPayone__serviceBuilder = $this->Plugin()->Application()->PayoneBuilder();
-        $this->moptPayone__main = $this->Plugin()->Application()->PayoneMain();
+        $this->moptPayone__serviceBuilder = $this->Plugin()->Application()->MoptPayoneBuilder();
+        $this->moptPayone__main = $this->Plugin()->Application()->MoptPayoneMain();
         $this->moptPayone__helper = $this->moptPayone__main->getHelper();
         $this->moptPayone__paymentHelper = $this->moptPayone__main->getPaymentHelper();
-        
+
+        $this->logger = new Monolog\Logger('moptPayone');
+        $streamHandler = new Monolog\Handler\StreamHandler(Shopware()->Application()->Kernel()->getLogDir()
+                . '/moptPayoneTransactionStatus.log', Monolog\Logger::ERROR);
+        $this->logger->pushHandler($streamHandler);
+
         $this->Front()->Plugins()->ViewRenderer()->setNoRender();
     }
 
@@ -38,11 +44,12 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
             return;
         }
 
+        $rawPost = $_POST;
         $_POST = array_map('utf8_encode', $_POST); // utf8 encode all post params to avoid encoding issues
         $request->setParamSources(array('_POST')); // only retrieve data from POST
 
         $transactionId = $request->getParam('txid');
-        $isOrderFinished = $this->isOrderFinished($request->getParam('txid'));
+        $isOrderFinished = $this->isOrderFinished($transactionId,  $request->getParam('reference'));
 
         if ($isOrderFinished) {
             $order = $this->loadOrderByTransactionId($transactionId);
@@ -52,24 +59,25 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
             $session = Shopware()->Session();
             $orderVariables = $session['sOrderVariables']->getArrayCopy();
             $paymentId = $orderVariables['sUserData']['additional']['user']['paymentID'];
-         }
-        
-        Shopware()->Config()->mopt_payone__paymentId = $paymentId; // store in config for log
-        $config = $this->moptPayone__main->getPayoneConfig($paymentId, true); // get key from config
+        }
+
+        $config = $this->moptPayone__main->getPayoneConfig($paymentId, true);
+        Shopware()->Config()->mopt_payone__paymentId = $paymentId; //store in config for log
         $key = $config['apiKey'];
 
         $moptConfig = new Mopt_PayoneConfig();
         $validIps = $moptConfig->getValidIPs();
 
         $service = $this->moptPayoneInitTransactionService($key, $validIps);
-        
+
         try {
             $response = $service->handleByPost();
         } catch (Exception $exc) {
-            echo 'error processing request: ' . $exc->getTraceAsString();
+                $this->logger->error('error processing request', array($exc->getTraceAsString()));
+            echo 'error processing request';
             exit;
         }
-
+        
         $orderIsCorrupted = false;
 
         if (!$isOrderFinished) {
@@ -96,26 +104,25 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
         if(isset($customParam[2])) {
             $attributeData->setMoptPayoneOrderHash($customParam[2]);
         }
-        
+
         $clearingData = $this->moptPayone__paymentHelper->extractClearingDataFromResponse($payoneRequest);
         if ($clearingData) {
             $clearingData = json_encode($clearingData);
             $attributeData->setMoptPayoneClearingData($clearingData);
         }
-        
+
         Shopware()->Models()->persist($attributeData);
         Shopware()->Models()->flush();
 
         if (!$orderIsCorrupted) {
             $mappedShopwareState = $this->moptPayone__helper->getMappedShopwarePaymentStatusId(
                     $config, $request->getParam('txaction'));
-            
+
             $this->savePaymentStatus($transactionId, $order->getTemporaryId(), $mappedShopwareState);
         }
-        
-        echo $response->getStatus();
 
-        $this->moptPayoneForwardTransactionStatus($config, $payoneRequest, $request->getParam('txaction'));
+        echo $response->getStatus();
+        $this->moptPayoneForwardTransactionStatus($config, $rawPost, $request->getParam('txaction'));
 
         exit;
     }
@@ -143,16 +150,14 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
      * forward request to configured urls
      * 
      * @param array $payoneConfig
-     * @param request $request
+     * @param array $rawPost
      * @param string $payoneStatus
      */
-    protected function moptPayoneForwardTransactionStatus($payoneConfig, $request, $payoneStatus)
+    protected function moptPayoneForwardTransactionStatus($payoneConfig, $rawPost, $payoneStatus)
     {
         $configKey = 'trans' . ucfirst($payoneStatus);
         if (isset($payoneConfig[$configKey])) {
             $forwardingUrls = explode(';', $payoneConfig[$configKey]);
-
-            $params = $request->toArray();
 
             $zendClientConfig = array(
                 'adapter' => 'Zend_Http_Client_Adapter_Curl',
@@ -166,7 +171,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
 
                 $client = new Zend_Http_Client($url, $zendClientConfig);
                 $client->setConfig(array('timeout' => 60));
-                $client->setParameterPost($params);
+                $client->setParameterPost($rawPost);
                 $client->request(Zend_Http_Client::POST);
             }
         }
@@ -195,7 +200,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
     }
 
     /**
-     * try to load order via order nr
+     * try to load order via transaction id
      * 
      * @param string $orderNumber
      * @return order
@@ -206,7 +211,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
                         ->findOneBy(array('number' => $orderNumber));
     }
 
-     /**
+    /**
      * restore session from Id
      * 
      * @param string $customParam
@@ -214,7 +219,7 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
     protected function restoreSession($customParam)
     {
         $sessionParam = explode('|', $customParam);
-
+        
         \Enlight_Components_Session::writeClose();
         \Enlight_Components_Session::setId($sessionParam[1]);
         \Enlight_Components_Session::start();
@@ -224,9 +229,10 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
      * determine wether order is already finished
      * 
      * @param string $transactionId
+     * @param string $paymentReference
      * @return boolean
      */
-    protected function isOrderFinished($transactionId)
+    protected function isOrderFinished($transactionId, $paymentReference)
     {
         $sql = '
             SELECT ordernumber FROM s_order
@@ -234,11 +240,51 @@ class Shopware_Controllers_Frontend_MoptShopNotification extends Shopware_Contro
 
         $orderNumber = Shopware()->Db()->fetchOne($sql, array($transactionId));
 
-        if (empty($orderNumber)) {
+        if (empty($orderNumber) && !$this->isFinishedWithReference($paymentReference, $transactionId)) {
             return false;
         } else {
             return true;
         }
-     }
- 
+    }
+    
+    /**
+     * determine wether order is already finished
+     * additional check for frontend api creditcard payments
+     * 
+     * @param string $paymentReference
+     * @param string $transactionId
+     * @return boolean
+     */
+    protected function isFinishedWithReference($paymentReference, $transactionId)
+    {
+        $sql = '
+            SELECT ordernumber FROM s_order
+            WHERE transactionID=? AND status!=-1';
+
+        $orderNumber = Shopware()->Db()->fetchOne($sql, array($paymentReference));
+
+        if (empty($orderNumber)) {
+            return false;
+        } else {
+            $this->setTransactionId($orderNumber, $transactionId);
+            return true;
+        }
+    }
+
+    /**
+     * update transaction id, needed for frontend api creditcard payments
+     * 
+     * @param string $orderNumber
+     * @param string $transactionId
+     * @return boolean
+     */
+    protected function setTransactionId($orderNumber, $transactionId)
+    {
+        $sql = '
+            UPDATE s_order SET transactionID=?
+            WHERE ordernumber=?';
+
+        Shopware()->Db()->query($sql, array($transactionId, $orderNumber));
+    }
+
 }

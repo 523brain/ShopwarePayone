@@ -6,6 +6,40 @@
 class Mopt_PayoneHelper
 {
 
+      /**
+   * check if Responsive Template is installed and activated for current subshop
+   * snippet provided by Conexco
+   * 
+   * @return bool
+   */
+  public function isResponsive() 
+  {
+    //Is Responsive Template installed and activated?
+    $sql = "SELECT 1 FROM s_core_plugins WHERE name='SwfResponsiveTemplate' AND active=1";
+    
+    $result = Shopware()->Db()->fetchOne($sql);
+    if ($result != 1)
+    {
+      // Plugin is not installed
+      return false;
+    }
+
+    //activated for current subshop?
+    $shop = Shopware()->Shop()->getId();
+    $sql  = "SELECT 1 FROM s_core_config_elements scce, s_core_config_values sccv WHERE "
+            . "scce.name='SwfResponsiveTemplateActive' AND scce.id=sccv.element_id AND sccv.shop_id='" 
+            . (int) $shop . "' AND sccv.value='b:0;'";
+    
+    $result  = Shopware()->Db()->fetchOne($sql);
+    if ($result == 1)
+    {
+      //deactivated
+      return false;
+    }
+    //not deactivated => activated
+    return true;
+  }
+    
   /**
    * returns Payone API value for selected addresschecktype
    * 
@@ -16,7 +50,7 @@ class Mopt_PayoneHelper
    */
   public function getAddressChecktypeFromId($id, $configuredCountriesForCheck, $selectedCountry)
   {
-      if(!empty($configuredCountriesForCheck)) {
+    if(!empty($configuredCountriesForCheck)) {
       $countries = explode(',', $configuredCountriesForCheck);
       if(!in_array($selectedCountry, $countries)) {
           return false;
@@ -112,7 +146,7 @@ class Mopt_PayoneHelper
       return false;
     }
 
-    $billingAddressChecktype = $this->getAddressChecktypeFromId($config['adresscheckBillingAdress'], 
+        $billingAddressChecktype = $this->getAddressChecktypeFromId($config['adresscheckBillingAdress'], 
             $config['adresscheckBillingCountries'], $selectedCountry);
 
     return $billingAddressChecktype;
@@ -282,13 +316,13 @@ class Mopt_PayoneHelper
     switch ($color)
     {
       case 'R':
-        return 0;
+        return 3;
         break;
       case 'Y':
-        return 1;
+        return 2;
         break;
       case 'G':
-        return 2;
+        return 1;
         break;
     }
 
@@ -345,12 +379,10 @@ class Mopt_PayoneHelper
    * check if check is still valid
    *
    * @param string $consumerScoreCheckLifetime
-   * @param string $moptPayoneConsumerScoreCheckResult
    * @param date $moptPayoneConsumerScoreCheckDate
    * @return boolean 
    */
-  public function isCosumerScoreCheckValid($consumerScoreCheckLifetime, $moptPayoneConsumerScoreCheckResult, 
-          $moptPayoneConsumerScoreCheckDate)
+  public function isConsumerScoreCheckValid($consumerScoreCheckLifetime, $moptPayoneConsumerScoreCheckDate)
   {
     if (!$moptPayoneConsumerScoreCheckDate)
     {
@@ -368,12 +400,13 @@ class Mopt_PayoneHelper
   /**
    * save check result
    *
+   * @param string $addressType 'billing' or 'shipping'
    * @param string $userId
    * @param object $response
    * @param string $mappedPersonStatus
    * @return mixed 
    */
-  public function saveBillingAddressCheckResult($userId, $response, $mappedPersonStatus)
+  public function saveAddressCheckResult($addressType, $userId, $response, $mappedPersonStatus)
   {
     if (!$userId)
     {
@@ -381,44 +414,19 @@ class Mopt_PayoneHelper
     }
 
     $user             = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
-    $billing          = $user->getBilling();
-    $billingAttribute = $this->getOrCreateBillingAttribute($billing);
-
-    $billingAttribute->setMoptPayoneAddresscheckDate(date('Y-m-d'));
-    $billingAttribute->setMoptPayoneAddresscheckPersonstatus($response->getPersonstatus());
-    $billingAttribute->setMoptPayoneAddresscheckResult($response->getStatus());
-    $billingAttribute->setMoptPayoneConsumerscoreColor($mappedPersonStatus);
-
-    Shopware()->Models()->persist($billingAttribute);
-    Shopware()->Models()->flush();
-  }
-
-  /**
-   * save check result
-   *
-   * @param string $userId
-   * @param object $response
-   * @param string $mappedPersonStatus
-   * @return mixed 
-   */
-  public function saveShippingAddressCheckResult($userId, $response, $mappedPersonStatus)
-  {
-    if (!$userId)
-    {
-      return;
+    if ($addressType === 'billing') {
+        $billing   = $user->getBilling();
+        $attribute = $this->getOrCreateBillingAttribute($billing);
+    } elseif ($addressType === 'shipping') {
+        $shipping  = $user->getShipping();
+        $attribute = $this->getOrCreateShippingAttribute($shipping);
     }
+    $attribute->setMoptPayoneAddresscheckDate(date('Y-m-d'));
+    $attribute->setMoptPayoneAddresscheckPersonstatus($response->getPersonstatus());
+    $attribute->setMoptPayoneAddresscheckResult($response->getStatus());
+    $attribute->setMoptPayoneConsumerscoreColor($mappedPersonStatus);
 
-
-    $user              = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->find($userId);
-    $shiping           = $user->getShipping();
-    $shippingAttribute = $this->getOrCreateShippingAttribute($shiping);
-
-    $shippingAttribute->setMoptPayoneAddresscheckDate(date('Y-m-d'));
-    $shippingAttribute->setMoptPayoneAddresscheckPersonstatus($response->getPersonstatus());
-    $shippingAttribute->setMoptPayoneAddresscheckResult($response->getStatus());
-    $shippingAttribute->setMoptPayoneConsumerscoreColor($mappedPersonStatus);
-
-    Shopware()->Models()->persist($shippingAttribute);
+    Shopware()->Models()->persist($attribute);
     Shopware()->Models()->flush();
   }
 
@@ -555,11 +563,10 @@ class Mopt_PayoneHelper
    */
   public function saveCorrectedBillingAddress($userId, $response)
   {
-    $sql = 'UPDATE `s_user_billingaddress` SET street=?, streetnumber=?, zipcode=?, city=?  WHERE userID = ?';
+    $sql = 'UPDATE `s_user_billingaddress` SET street=?, zipcode=?, city=?  WHERE userID = ?';
     Shopware()->Db()->query(
             $sql, array(
-        $response->getStreetname(),
-        $response->getStreetnumber(),
+        $response->getStreet(),
         $response->getZip(),
         $response->getCity(),
         $userId));
@@ -573,11 +580,10 @@ class Mopt_PayoneHelper
    */
   public function saveCorrectedShippingAddress($userId, $response)
   {
-    $sql = 'UPDATE `s_user_shippingaddress` SET street=?, streetnumber=?, zipcode=?, city=?  WHERE userID = ?';
+    $sql = 'UPDATE `s_user_shippingaddress` SET street=?, zipcode=?, city=?  WHERE userID = ?';
     Shopware()->Db()->query(
             $sql, array(
-        $response->getStreetname(),
-        $response->getStreetnumber(),
+        $response->getStreet(),
         $response->getZip(),
         $response->getCity(),
         $userId));
@@ -664,84 +670,54 @@ class Mopt_PayoneHelper
    */
   public function getScoreFromUserAccordingToPaymentConfig($user, $config)
   {
-    //if addresscheck enabled
-    if ($config['adresscheckActive'])
-    {
-      if ($config['adresscheckBillingAdress'] != 0)
-      {
-        //get addresscheckscore
-        if (!$billingColor = $user['billingaddress']['moptPayoneConsumerscoreColor'])
-        {
-          $billingColor = -2;
+    $billingColor = $this->getSpecificScoreFromUser($user['billingaddress']['moptPayoneConsumerscoreColor'],
+        $config['adresscheckActive'] && $config['adresscheckBillingAdress'] != 0);
+    $shipmentColor = $this->getSpecificScoreFromUser($user['shippingaddress']['moptPayoneConsumerscoreColor'],
+        $config['adresscheckActive'] && $config['adresscheckShippingAdress'] != 0);
+    $consumerScoreColor = $this->getSpecificScoreFromUser($user['additional']['user']['moptPayoneConsumerscoreColor'],
+        $config['consumerscoreActive']);
+    
+    $biggestScore = max($billingColor, $shipmentColor, $consumerScoreColor);
+    
+    if ($biggestScore == -1) {
+        $defaultScore = (int)$config['consumerscoreDefault']; //0=R, 1=Y, 2=G
+        if((int)$config['consumerscoreDefault'] === 0) {
+            $defaultScore = 2;
         }
-      }
-      else
-      {
-        $billingColor = -1;
-      }
-      //if shipmentadresscheck enabled
-      if ($config['adresscheckShippingAdress'] != 0)
-      {
-        //get shipmentadresscheck score
-        if (!$shipmentColor = $user['shippingaddress']['moptPayoneConsumerscoreColor'])
-        {
-          $shipmentColor = -2;
+        if((int)$config['consumerscoreDefault'] === 2) {
+            $defaultScore = 0;
         }
-      }
-      else
-      {
-        $shipmentColor = -1;
-      }
+        $biggestScore = $defaultScore + 1; //as default return new customer default value
     }
-    else
-    {
-      $billingColor  = -1;
-      $shipmentColor = -1;
+    
+    if(in_array($biggestScore, array(1,2,3))) {
+        return $biggestScore;
+    } else {
+        return -3; //no checks are active for this payment method
     }
-
-    //if consumerscore enabled
-    if ($config['consumerscoreActive'])
-    {
-      //get consumerscore
-      if (!$consumerScoreColor = $user['additional']['user']['moptPayoneConsumerscoreColor'])
-      {
-        $consumerScoreColor = -2;
-      }
-    }
-    else
-    {
-      $consumerScoreColor = -1;
-    }
-
-    //map value G-1, Y-2, R-3
-    $billingColor       = $this->getUserScoringValueFromColor($billingColor);
-    $shipmentColor      = $this->getUserScoringValueFromColor($shipmentColor);
-    $consumerScoreColor = $this->getUserScoringValueFromColor($consumerScoreColor);
-    $lowestScore        = min($billingColor, $shipmentColor, $consumerScoreColor);
-
-    //as default return new customer default value
-    if ($lowestScore == -2)
-    {
-      $lowestScore = $config['consumerscoreDefault'];
-    }
-
-    switch ($lowestScore)
-    {
-      case 0:
-        return 3;
-        break;
-      case 1:
-        return 2;
-        break;
-      case 2:
-        return 1;
-        break;
-    }
-
-    //no check are active for this payment method
-    return -3;
+    
   }
-
+  
+  /**
+   * 
+   * @param type $value the color value, can be NULL if not computed (e.g. user not logged in)
+   * @param bool $condition if the score should be used
+   * @return int
+   */
+  protected function getSpecificScoreFromUser($value, $condition)
+  {
+      if ($condition) {
+        //get addresscheckscore
+        if ($value) {
+            return $this->getUserScoringValueFromColor($value);
+        } else {
+            return -1;
+        }
+    } else {
+        return -2;
+    }
+  }
+  
   /**
    * get or create attribute data for given object
    *
@@ -1083,6 +1059,19 @@ class Mopt_PayoneHelper
     $countryId = Shopware()->Db()->fetchOne($sql);
     return $countryId;
   }
+
+  /**
+   * get country iso from id
+   *
+   * @param string $id
+   * @return string 
+   */
+  public function getCountryIsoFromId($id)
+  {
+    $sql     = 'SELECT `countryiso` FROM s_core_countries WHERE `id`="' . (int)$id . '";';
+    $countryIso = Shopware()->Db()->fetchOne($sql);
+    return $countryIso;
+  }
   
     /**
      * get state id from iso
@@ -1104,55 +1093,6 @@ class Mopt_PayoneHelper
         
     }
     
-    public function getSplittedAddress($address)
-    {
-        $result = array();
-        $result[0] = $address;
-        $street = explode(' ', $address);
-        $left = 0;
-        $right = 0;
-        // part starts with a digit or is one letter
-        while (preg_match('/^\d/i', $street[$left]) || preg_match('/^[a-z]$/i', $street[$left])) {
-            $left += 1;
-        }
-        while (preg_match('/^\d/i', $street[count($street) - $right -1]) || preg_match('/^[a-z]$/i', $street[count($street) - $right -1])) {
-            $right += 1;
-        }
-        // cant split correctly
-        if ($left + $right === 0 || $left === count($street) || $right === count($street)) {
-            $result[1] = $address;
-            $result[2] = "-";
-            return $result;
-        }
-        // Number is at the end
-        if ($right > 0) {
-            $result[1] = implode(' ', array_slice($street, 0, - $right));
-            $result[2] = implode(' ', array_slice($street, - $right));
-            return $result;
-        }
-        // number is at the beginning
-        $left2 = 1;
-        while (preg_match('/^\d+$/i', $street[$left2]) || preg_match('/^[a-z]$/i', $street[$left2])) {
-            $left2 += 1;
-        }
-        $result[1] = implode(' ', array_slice($street, $left2));
-        $result[2] = implode(' ', array_slice($street, 0,  $left2));
-        return $result;
-    }
-
-  /**
-   * get country iso from id
-   *
-   * @param string $id
-   * @return string 
-   */
-  public function getCountryIsoFromId($id)
-  {
-    $sql     = 'SELECT `countryiso` FROM s_core_countries WHERE `id`="' . (int)$id . '";';
-    $countryIso = Shopware()->Db()->fetchOne($sql);
-    return $countryIso;
-  }
-  
     /**
      * retrieve and reteurn country id for selected address
      * 
@@ -1168,5 +1108,5 @@ class Mopt_PayoneHelper
             return $userData['register']['billing']['country'];
         }
     }
-    
+
 }

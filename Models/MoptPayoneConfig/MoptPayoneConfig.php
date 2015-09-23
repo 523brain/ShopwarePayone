@@ -1220,7 +1220,7 @@ class MoptPayoneConfig extends ModelEntity
   {
     $this->creditcardMinValid = $creditcardMinValid;
   }
-
+  
   public function getAdresscheckBillingCountries()
   {
     return $this->adresscheckBillingCountries;
@@ -1240,5 +1240,4 @@ class MoptPayoneConfig extends ModelEntity
   {
     $this->adresscheckShippingCountries = $adresscheckShippingCountries;
   }
-  
 }

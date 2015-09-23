@@ -1,0 +1,44 @@
+{
+    "label": {
+        "de": "PAYONE Payment Plugin",
+        "en": "PAYONE Payment Plugin"
+    },
+    "copyright": "Copyright © 2015, mediaopt",
+    "link": "http://www.mediaopt.de/",
+    "author": "derksen mediaopt GmbH",
+    "currentVersion": "3.2.4",
+
+    "changelogs": {
+        "de": {
+            "3.0.0": "Shopware 5 Kompatibilität",
+            "3.1.0": "Länderkonfiguration für Adressprüfung, Steuern als Basispunkte, Mindestgültigkeitsdauer für Kreditkarten",
+            "3.1.1": "Bestellabschluss bei Redirect-Zahlungen angepasst",
+            "3.1.2": "Bugfixes",
+            "3.1.3": "Kreditkartenzahlung per Frontend-API",
+            "3.2.0": "Kreditkartenvalidierung per hosted-iFrame",
+            "3.2.1": "Bugfixes",
+            "3.2.2": "Neue Zahlart Barzahlen integriert",
+            "3.2.3": "Bugfixes",
+            "3.2.4": "Javascript Integration an geänderte Shopware Templates angepast"
+        },
+        "en": {
+            "3.0.0": "Shopware 5 compatibility",
+            "3.1.0": "configure countries for addresscheck, transfer taxes as basepoint, configure minimum valid days for creditcards",
+            "3.1.1": "updated order finalizing on redirect payments",
+            "3.1.2": "Bugfixes",
+            "3.1.3": "added creditcard frontend-API payment",
+            "3.2.0": "added creditcard validation via hosted-iFrame",
+            "3.2.1": "Bugfixes",
+            "3.2.2": "New payment method Barzahlen integrated",
+            "3.2.3": "Bugfixes",
+            "3.2.4": "Updated Javascript integration to changed Shopware templates"
+        }
+    },
+
+    "compatibility": {
+        "minimumVersion": "5.0.0",
+        "maximumVersion": null,
+        "blacklist": [
+        ]
+    }
+}

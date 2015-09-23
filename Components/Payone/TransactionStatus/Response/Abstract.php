@@ -36,6 +36,12 @@
 abstract class Payone_TransactionStatus_Response_Abstract
     implements Payone_TransactionStatus_Response_Interface
 {
+
+    /**
+     * @var Payone_Protocol_Service_ApplyFilters
+     */
+    private $applyFilters = NULL;
+
     /**
      * @param $name
      * @return null|mixed
@@ -60,6 +66,14 @@ abstract class Payone_TransactionStatus_Response_Abstract
             return true;
         }
         return null;
+    }
+
+    /**
+     * @param Payone_Protocol_Service_ApplyFilters $applyFilters
+     */
+    public function setApplyFilters(Payone_Protocol_Service_ApplyFilters $applyFilters)
+    {
+        $this->applyFilters = $applyFilters;
     }
 
 }

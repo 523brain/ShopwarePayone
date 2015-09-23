@@ -148,6 +148,32 @@ class Mopt_PayonePaymentHelper
 
     return $responseData;
   }
+  
+    /**
+   * extract barzahlen code to embed on checkout finish page from response object
+   *
+   * @param object $response
+   * @return boolean/array
+   */
+  public function extractBarzahlenCodeFromResponse($response)
+  {
+    if (!method_exists($response, 'getPaydata')) {
+        return;
+    }
+    $payData = $response->getPaydata();
+    if (!$payData) {
+        return false;
+    }
+    $arr = $payData->toArray();
+    foreach ($arr as $k => $v) {
+        $arr[substr($k, strpos($k, '[')+1, -1)] = $v;
+    }
+    if ($arr['content_format'] === 'HTML') {
+        return urldecode( $arr['instruction_notes']);
+    } else {
+        return $arr['instruction_notes'];
+    }
+  }
 
   /**
    * returns clearing data
@@ -189,8 +215,23 @@ class Mopt_PayonePaymentHelper
       return false;
     }
   }
+  
+    /**
+     * check if given payment name is payone creditcard payment
+     *
+     * @param string $paymentName
+     * @return boolean 
+     */
+    public function isPayoneCreditcardForExport($paymentName)
+    {
+        if (preg_match('#mopt_payone__cc#', $paymentName) || $paymentName == 'mopt_payone_creditcard' || preg_match('#mopt_payone__creditcard_iframe#', $paymentName)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-  /**
+    /**
    * check if given payment name is payone creditcard payment not grouped
    * it only checks for real existing payment methods not for virtual method "mopt_payone_creditcard"
    *
@@ -227,6 +268,24 @@ class Mopt_PayonePaymentHelper
     }
   }
 
+  /**
+   * check if given payment name is payone barzahlen payment
+   *
+   * @param string $paymentName
+   * @return boolean 
+   */
+  public function isPayoneBarzahlen($paymentName)
+  {
+    if (preg_match('#mopt_payone__csh_barzahlen#', $paymentName))
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  
   /**
    * check if given payment name is payone giropay payment
    *
@@ -562,7 +621,7 @@ class Mopt_PayonePaymentHelper
         return strpos($paymentName, 'mopt_payone__creditcard_iframe') === 0;
     }
 
-  /**
+    /**
    * get online bank transfer type for api communication
    *
    * @param string $paymentName
@@ -812,13 +871,13 @@ class Mopt_PayonePaymentHelper
             return 'finance';
         }
         
-        if ($this->isPayoneCreditcardIframe($paymentShortName))
-        {
+        if ($this->isPayoneCreditcardIframe($paymentShortName)) {
             return 'creditcardIframe';
         }
-        
-        
 
+        if ($this->isPayoneBarzahlen($paymentShortName)) {
+            return 'barzahlen';
+        }
         return false;
     }
  
@@ -839,4 +898,48 @@ class Mopt_PayonePaymentHelper
         return (bool) $config['paypalEcsActive'];
     }
     
+    /**
+     * group credit cards to single payment method creditcard
+     * 
+     * @param array $paymentMeans
+     * @return bool|array
+     */
+    public function groupCreditcards($paymentMeans)
+    {
+        $firstHit = 'not_set';
+        $creditCardData = array();
+
+        foreach ($paymentMeans as $key => $paymentmean) {
+            if ($this->isPayoneCreditcardNotGrouped($paymentmean['name'])) {
+                if ($firstHit === 'not_set') {
+                    $firstHit = $key;
+                }
+
+                $creditCard = array();
+                $creditCard['id'] = $paymentmean['id'];
+                $creditCard['name'] = $paymentmean['name'];
+                $creditCard['description'] = $paymentmean['description'];
+
+                $creditCardData[] = $creditCard;
+
+                if ($firstHit != $key) {
+                    unset($paymentMeans[$key]);
+                }
+            }
+        }
+
+        // don't assign anything if no creditcard was found
+        if ($firstHit === 'not_set') {
+            return false;
+        }
+
+        $snippetObject = Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/payment');
+        $paymentMeans[$firstHit]['id'] = 'mopt_payone_creditcard';
+        $paymentMeans[$firstHit]['name'] = 'mopt_payone_creditcard';
+        $paymentMeans[$firstHit]['description'] = $snippetObject->get('PaymentMethodCreditCard', 'Kreditkarte', true);
+        $paymentMeans[$firstHit]['mopt_payone_credit_cards'] = $creditCardData;
+
+        return $paymentMeans;
+    }
+
 }

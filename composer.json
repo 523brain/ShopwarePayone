@@ -1,7 +1,0 @@
-{
-	"name": "Mopt/PaymentPayone",
-	"type": "shopware-frontend-plugin",
-	"require": {
-		"composer/installers": "~1.0"
-	}
-}

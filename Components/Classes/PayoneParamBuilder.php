@@ -175,7 +175,8 @@ class Mopt_PayoneParamBuilder
         continue;
       }
 
-      $amount += ($position->getPrice() * $position->getQuantity());
+      $positionPrice = round($position->getPrice(), 2);
+      $amount += ($positionPrice * $position->getQuantity());
       
       if($position->getArticleNumber() == 'SHIPPING')
       {
@@ -213,7 +214,8 @@ class Mopt_PayoneParamBuilder
       $positionAttribute = $this->payoneHelper->getOrCreateAttribute($position);
       $alreadyCapturedAmount = $positionAttribute ? $positionAttribute->getMoptPayoneCaptured() : 0;
       //add difference between total price and already captured amount
-      $amount += ($position->getPrice() * $position->getQuantity()) - $alreadyCapturedAmount;
+      $positionPrice = round($position->getPrice(), 2);
+      $amount += ($positionPrice * $position->getQuantity()) - $alreadyCapturedAmount;
       
       if($position->getArticleNumber() == 'SHIPPING')
       {
@@ -266,7 +268,7 @@ class Mopt_PayoneParamBuilder
     $params['firstname']       = $billingAddress['firstname'];
     $params['lastname']        = $billingAddress['lastname'];
     $params['company']         = $billingAddress['company'];
-    $params['street']          = $billingAddress['street'] . ' ' . $billingAddress['streetnumber'];
+    $params['street']          = $billingAddress['street'];
     $params['zip']             = $billingAddress['zipcode'];
     $params['city']            = $billingAddress['city'];
     if(!empty($userData['additional']['country']['countryiso']))
@@ -311,7 +313,7 @@ class Mopt_PayoneParamBuilder
     $params['shipping_firstname'] = $shippingAddress['firstname'];
     $params['shipping_lastname']  = $shippingAddress['lastname'];
     $params['shipping_company']   = $shippingAddress['company'];
-    $params['shipping_street']    = $shippingAddress['street'] . ' ' . $shippingAddress['streetnumber'];
+    $params['shipping_street']    = $shippingAddress['street'];
     $params['shipping_zip']       = $shippingAddress['zipcode'];
     $params['shipping_city']      = $shippingAddress['city'];
     $params['shipping_country']   = $this->getCountryFromId($shippingAddress['countryID']);
@@ -594,30 +596,38 @@ class Mopt_PayoneParamBuilder
     return $payment;
   }
 
-  /**
-   * collect all items
-   *
-   * @param array $basket
-   * @param array $shipment
-   * @param array $userData
-   * @return \Payone_Api_Request_Parameter_Invoicing_Transaction 
-   */
-  public function getInvoicing($basket, $shipment, $userData)
-  {
-    $transaction = new Payone_Api_Request_Parameter_Invoicing_Transaction(array());
+    /**
+     * collect all items
+     *
+     * @param array $basket
+     * @param array $shipment
+     * @param array $userData
+     * @return \Payone_Api_Request_Parameter_Invoicing_Transaction 
+     */
+    public function getInvoicing($basket, $shipment, $userData)
+    {
+        $transaction = new Payone_Api_Request_Parameter_Invoicing_Transaction(array());
 
-    foreach ($this->getBasketItems($basket, $shipment, $userData) as $params) {
-      $item = new Payone_Api_Request_Parameter_Invoicing_Item($params);
-      $transaction->addItem($item);
+        foreach ($this->getBasketItems($basket, $shipment, $userData) as $params) {
+            $item = new Payone_Api_Request_Parameter_Invoicing_Item($params);
+            $transaction->addItem($item);
+        }
+
+        return $transaction;
     }
 
-    return $transaction;
-  }
-  
+    /**
+     * return all basket positions
+     * 
+     * @param array $basket
+     * @param array $shipment
+     * @param array $userData
+     * @return array
+     */
     protected function getBasketItems($basket, $shipment, $userData)
     {
         $items = array();
-        
+
         $taxFree = false;
         if (isset($userData['additional']['charge_vat'])) {
             $taxFree = !$userData['additional']['charge_vat'];
@@ -643,7 +653,7 @@ class Mopt_PayoneParamBuilder
             }
             $items[] = $params;
         }
-        
+
         //add shipment as position
         $params = array();
         $params['id'] = substr($shipment['name'], 0, 100); //article number
@@ -654,9 +664,9 @@ class Mopt_PayoneParamBuilder
         $params['va'] = round($params['va'] * 100);
         $params['it'] = Payone_Api_Enum_InvoicingItemType::SHIPMENT;
         $params = array_map('utf8_encode', $params);
-        
+
         $items[] = $params;
-        
+
         return $items;
     }
 
@@ -716,6 +726,7 @@ class Mopt_PayoneParamBuilder
       {
         $params['va'] = number_format($position->getTaxRate(), 0, '.', ''); // vat
       }
+      $params['va'] = round($params['va'] * 100);
       $params['it']   = Payone_Api_Enum_InvoicingItemType::GOODS; //item type
       $mode           = $position->getMode();
       if ($mode == 2)
@@ -776,7 +787,6 @@ class Mopt_PayoneParamBuilder
       }
       $params['va'] = round($params['va'] * 100);
       
-      
       $params = array_map('htmlspecialchars_decode', $params);
       $item   = new Payone_Api_Request_Parameter_Invoicing_Item($params);
       $transaction->addItem($item);
@@ -800,9 +810,7 @@ class Mopt_PayoneParamBuilder
     $params['firstname']    = $personalFormData['firstname'];
     $params['lastname']     = $personalFormData['lastname'];
     $params['company']      = $addressFormData['company'];
-    $params['street']       = $addressFormData['street'] . ' ' . $addressFormData['streetnumber'];
-    $params['streetname']   = $addressFormData['street'];
-    $params['streetnumber'] = $addressFormData['streetnumber'];
+    $params['street']       = $addressFormData['street'];
     $params['zip']          = $addressFormData['zipcode'];
     $params['city']         = $addressFormData['city'];
 
@@ -833,9 +841,7 @@ class Mopt_PayoneParamBuilder
     $params['firstname']    = $userFormData['firstname'];
     $params['lastname']     = $userFormData['lastname'];
     $params['company']      = $userFormData['company'];
-    $params['street']       = $userFormData['street'] . ' ' . $userFormData['streetnumber'];
-    $params['streetname']   = $userFormData['street'];
-    $params['streetnumber'] = $userFormData['streetnumber'];
+    $params['street']       = $userFormData['street'];
     $params['zip']          = $userFormData['zipcode'];
     $params['city']         = $userFormData['city'];
 
@@ -1042,12 +1048,20 @@ class Mopt_PayoneParamBuilder
     {
         return preg_replace('/\s+/', '', $input);
     }
-
+    
+    /**
+     * return all needed parameters for iframe integration
+     * 
+     * @param array $basket
+     * @param array $shipment
+     * @param array $userData
+     * @return array
+     */
     public function buildIframeParameters($basket, $shipment, $userData)
     {
         $payoneConfig = Mopt_PayoneMain::getInstance()->getPayoneConfig();
         $router = Shopware()->Front()->Router();
-        
+
         $params = array();
         $params['encoding'] = 'UTF-8';
         $params['portalid'] = $payoneConfig['portalId'];
@@ -1056,34 +1070,44 @@ class Mopt_PayoneParamBuilder
         $params['request'] = $this->getParamAuthorizationMethod($payoneConfig);
         $params['clearingtype'] = 'cc';
         $params['currency'] = Shopware()->Currency()->getShortName();
-        $params['amount'] = (int)($this->getParamAmount($basket, $userData) * 100);
+        $params['amount'] = (int) round(($this->getParamAmount($basket, $userData) * 100));
         $params['reference'] = $this->getParamPaymentReference();
         $params['targetwindow'] = 'top';
         $params['param'] = $this->getCustomSessionParameters();
         
         foreach ($this->getBasketItems($basket, $shipment, $userData) as $key => $data) {
             $params['id[' . ($key + 1) . ']'] = $data['id'];
-            $params['pr[' . ($key + 1) . ']'] = round($data['pr']*100); //int cast has rounding problems
+            $params['pr[' . ($key + 1) . ']'] = round($data['pr'] * 100); //int cast has rounding problems
             $params['no[' . ($key + 1) . ']'] = $data['no'];
             $params['de[' . ($key + 1) . ']'] = $data['de'];
             $params['va[' . ($key + 1) . ']'] = $data['va'];
         }
-        
+
         $params['successurl'] = $router->assemble(array(
-            'controller' => 'MoptPaymentPayone', 
-            'action' => 'creditcardIframeSuccess', 
+            'controller' => 'MoptPaymentPayone',
+            'action' => 'creditcardIframeSuccess',
             'reference' => $params['reference'],
-            'forceSecure' => true));
-        $params['backurl'] = $router->assemble(array(
-            'controller' => 'checkout', 
-            'action' => 'confirm', 
             'forceSecure' => true,
+            'appendSession' => true,
             ));
-        
+        $params['backurl'] = $router->assemble(array(
+            'controller' => 'checkout',
+            'action' => 'confirm',
+            'forceSecure' => true,
+            'appendSession' => true,
+        ));
+
         $params['hash'] = $this->getParamHash($params);
         return $params;
     }
-    
+
+    /**
+     * get total basket amount
+     * 
+     * @param array $basket
+     * @param array $userData
+     * @return int
+     */
     protected function getParamAmount($basket, $userData)
     {
         if (!empty($userData['additional']['charge_vat'])) {
@@ -1092,31 +1116,48 @@ class Mopt_PayoneParamBuilder
             return $basket['AmountNetNumeric'];
         }
     }
-    
-    protected function getParamHash($request) 
+
+    /**
+     * hash iframe parameters
+     * 
+     * @param array $request
+     * @return string
+     */
+    protected function getParamHash($request)
     {
         $payoneConfig = Mopt_PayoneMain::getInstance()->getPayoneConfig();
         ksort($request);
-        
+
         $hashString = '';
         foreach ($request as $value) {
             $hashString .= $value;
         }
-        
+
         return md5($hashString .= $payoneConfig['apiKey']);
     }
-    
+
+    /**
+     * determine authorization method
+     * 
+     * @param array $payoneConfig
+     * @return string
+     */
     protected function getParamAuthorizationMethod($payoneConfig)
     {
         $preAuthValues = array('preAuthorise', 'Vorautorisierung');
-        
+
         if (in_array($payoneConfig['authorisationMethod'], $preAuthValues)) {
             return Payone_Api_Enum_RequestType::PREAUTHORIZATION;
         } else {
             return Payone_Api_Enum_RequestType::AUTHORIZATION;
         }
     }
-    
+
+    /**
+     * build custom params
+     * 
+     * @return string
+     */
     protected function getCustomSessionParameters()
     {
         $session = Shopware()->Session();
@@ -1125,9 +1166,9 @@ class Mopt_PayoneParamBuilder
         $orderVariables = $session['sOrderVariables'];
         $orderHash = md5(serialize($orderVariables));
         $session->moptOrderHash = $orderHash;
-        
-        return 'session-' . Shopware()->Shop()->getId() . '|' . Shopware()->Modules()->Admin()->sSYSTEM->sSESSION_ID . 
+
+        return 'session-' . Shopware()->Shop()->getId() . '|' . Shopware()->Modules()->Admin()->sSYSTEM->sSESSION_ID .
                 '|' . $orderHash;
-        
     }
+
 }
