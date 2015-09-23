@@ -257,6 +257,11 @@ class Payment implements SubscriberInterface
     public function onGetDispatchBasket(Enlight_Hook_HookArgs $arguments)
     {
         $returnValues = $arguments->getReturn();
+
+        if ($returnValues === false) {
+            return false;
+        }
+
         $paymenthelper = $this->container->get('MoptPayoneMain')->getPaymentHelper();
 
         if (!$paymenthelper->isPayoneCreditcard($returnValues['paymentID'])) {
