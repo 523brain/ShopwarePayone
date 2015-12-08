@@ -1996,7 +1996,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   /**
    * Returns the path to a frontend controller for an event.
    *
-   * @param Enlight_Event_EventArgs $args
+   * @param \Enlight_Event_EventArgs $args
    * @return string
    */
   public static function onGetControllerPathFrontendMoptPaymentPayone()
@@ -2072,9 +2072,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
  /**
   * choose correct tpl folder and extend shopware templates
   * 
-  * @param Enlight_Event_EventArgs $args
+  * @param \Enlight_Event_EventArgs $args
   */
-  public function onPostDispatch(Enlight_Event_EventArgs $args)
+  public function onPostDispatch(\Enlight_Event_EventArgs $args)
   {
     $request  = $args->getSubject()->Request();
     $response = $args->getSubject()->Response();
@@ -2190,10 +2190,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   /**
    * Creates and returns the payone builder for an event.
    *
-   * @param Enlight_Event_EventArgs $args
+   * @param \Enlight_Event_EventArgs $args
    * @return \Shopware_Components_Payone_Builder
    */
-  public function onInitResourcePayoneBuilder(Enlight_Event_EventArgs $args)
+  public function onInitResourcePayoneBuilder(\Enlight_Event_EventArgs $args)
   {
     $builder = new Payone_Builder();
     return $builder;
@@ -2202,16 +2202,16 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   /**
    * Creates and returns the payone builder for an event.
    *
-   * @param Enlight_Event_EventArgs $args
+   * @param \Enlight_Event_EventArgs $args
    * @return \Shopware_Components_Payone_Builder
    */
-  public function onInitResourcePayoneMain(Enlight_Event_EventArgs $args)
+  public function onInitResourcePayoneMain(\Enlight_Event_EventArgs $args)
   {
     $moptPayoneMain = Mopt_PayoneMain::getInstance();
     return $moptPayoneMain;
   }
 
-  public function onBackendRiskManagementPostDispatch(Enlight_Event_EventArgs $args)
+  public function onBackendRiskManagementPostDispatch(\Enlight_Event_EventArgs $args)
   {
     $view = $args->getSubject()->View();
 
@@ -2230,7 +2230,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $view->extendsTemplate('backend/mopt_risk_management/view/risk_management/container.js');
   }
 
-  public function moptExtendController_Backend_Order(Enlight_Event_EventArgs $args)
+  public function moptExtendController_Backend_Order(\Enlight_Event_EventArgs $args)
   {
     $view = $args->getSubject()->View();
     $args->getSubject()->View()->addTemplateDir($this->Path() . 'Views/');
@@ -2241,7 +2241,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     $view->extendsTemplate('backend/mopt_payone_order/view/detail/position.js');
   }
 
-  public function moptExtendController_Backend_Payment(Enlight_Event_EventArgs $args)
+  public function moptExtendController_Backend_Payment(\Enlight_Event_EventArgs $args)
   {
     $view = $args->getSubject()->View();
     $args->getSubject()->View()->addTemplateDir($this->Path() . 'Views/');
@@ -2254,9 +2254,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    * add attribute data to detail-data
    * @parent fnc head: protected function getList($filter, $sort, $offset, $limit)
    * 
-   * @param Enlight_Event_EventArgs $args
+   * @param \Enlight_Event_EventArgs $args
    */
-  public function Order__getList__after(Enlight_Event_EventArgs $args)
+  public function Order__getList__after(\Enlight_Event_EventArgs $args)
   {
     $return = $args->getReturn();
     $helper = $this->Application()->PayoneMain()->getHelper();
@@ -2285,9 +2285,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
   /**
    * map transaction status according to confguration after an order is saved
    * 
-   * @param Enlight_Event_EventArgs $args
+   * @param \Enlight_Event_EventArgs $args
    */
-  public function sOrder__sSaveOrder__after(Enlight_Event_EventArgs $args)
+  public function sOrder__sSaveOrder__after(\Enlight_Event_EventArgs $args)
   {
     $main        = $this->Application()->PayoneMain();
     $helper      = $main->getHelper();
@@ -2314,10 +2314,10 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
    * transfer attribute data from temp order to new finalized order, shopware doesn't do it automatically
    * the temp order contains already the pushed transaction status data
    * 
-   * @param Enlight_Event_EventArgs $args
+   * @param \Enlight_Event_EventArgs $args
    * @return string
    */
-  public function event_Shopware_Modules_Order_SaveOrderAttributes_FilterSQL(Enlight_Event_EventArgs $args)
+  public function event_Shopware_Modules_Order_SaveOrderAttributes_FilterSQL(\Enlight_Event_EventArgs $args)
   {
     $sql    = $args->getReturn();
     $sOrder = $args->getSubject();
@@ -2600,7 +2600,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     return true;
   }
   
-  public function moptExtendController_Frontend_Checkout(Enlight_Event_EventArgs $args)
+  public function moptExtendController_Frontend_Checkout(\Enlight_Event_EventArgs $args)
   {
     $view     = $args->getSubject()->View();
     $request  = $args->getSubject()->Request();
